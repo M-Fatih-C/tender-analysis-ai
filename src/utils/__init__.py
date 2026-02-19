@@ -11,6 +11,8 @@ from src.utils.helpers import (
     validate_pdf_file,
     truncate_text,
     sanitize_filename,
+    normalize_whitespace,
+    remove_header_footer_repeats,
 )
 
 __all__ = [
@@ -19,4 +21,6 @@ __all__ = [
     "validate_pdf_file",
     "truncate_text",
     "sanitize_filename",
+    "normalize_whitespace",
+    "remove_header_footer_repeats",
 ]

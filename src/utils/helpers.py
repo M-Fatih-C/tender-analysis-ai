@@ -161,3 +161,119 @@ def calculate_reading_time(text: str, words_per_minute: int = 200) -> int:
     """
     word_count = len(text.split())
     return max(1, round(word_count / words_per_minute))
+
+
+# ============================================================
+# Modül 2'de eklenen fonksiyonlar / Functions added in Module 2
+# ============================================================
+
+
+def normalize_whitespace(text: str) -> str:
+    """
+    Ardışık boşluk ve newline'ları normalleştir / Normalize consecutive whitespace and newlines.
+
+    Birden fazla ardışık boşluğu tek boşluğa,
+    birden fazla ardışık boş satırı tek boş satıra dönüştürür.
+
+    Collapses multiple consecutive spaces into one space,
+    and multiple consecutive blank lines into a single blank line.
+
+    Args:
+        text: Ham metin / Raw text
+
+    Returns:
+        Normalleştirilmiş metin / Normalized text
+
+    Examples:
+        >>> normalize_whitespace("merhaba    dünya")
+        'merhaba dünya'
+        >>> normalize_whitespace("satır1\\n\\n\\n\\nsatır2")
+        'satır1\\n\\nsatır2'
+    """
+    if not text:
+        return ""
+
+    # Ardışık boşlukları tek boşluğa (newline hariç)
+    # Collapse consecutive spaces (not newlines)
+    normalized = re.sub(r"[^\S\n]+", " ", text)
+
+    # 3+ ardışık newline'ı 2'ye düşür / Reduce 3+ newlines to 2
+    normalized = re.sub(r"\n{3,}", "\n\n", normalized)
+
+    return normalized.strip()
+
+
+def remove_header_footer_repeats(
+    pages_text: list[str],
+    min_repeat_ratio: float = 0.6,
+    max_line_length: int = 120,
+) -> list[str]:
+    """
+    Sayfalarda tekrar eden header/footer satırlarını kaldırır.
+    Removes header/footer lines that repeat across pages.
+
+    Her sayfanın ilk ve son birkaç satırını kontrol eder.
+    Sayfaların belirli bir oranında (varsayılan %60) aynı satır
+    tekrar ediyorsa, header/footer olarak kabul edilir ve kaldırılır.
+
+    Checks first and last few lines of each page. If the same line
+    repeats in a certain ratio of pages (default 60%), it's considered
+    a header/footer and removed.
+
+    Args:
+        pages_text: Sayfa metinleri listesi / List of page texts
+        min_repeat_ratio: Minimum tekrar oranı (0-1) / Minimum repeat ratio
+        max_line_length: Bu uzunluktan uzun satırlar atlanır / Lines longer than this are skipped
+
+    Returns:
+        Temizlenmiş sayfa metinleri / Cleaned page texts
+
+    Examples:
+        >>> pages = ["Header\\nİçerik 1\\nFooter", "Header\\nİçerik 2\\nFooter"]
+        >>> remove_header_footer_repeats(pages, min_repeat_ratio=0.5)
+        ['İçerik 1', 'İçerik 2']
+    """
+    if len(pages_text) < 3:
+        # Çok az sayfa varsa güvenilir tespit yapılamaz
+        # Too few pages for reliable detection
+        return pages_text
+
+    # Her sayfanın ilk 3 ve son 3 satırını topla / Collect first/last 3 lines
+    check_lines = 3
+    candidate_lines: dict[str, int] = {}
+
+    for page_text in pages_text:
+        lines = page_text.strip().split("\n")
+        check_from = lines[:check_lines] + lines[-check_lines:]
+
+        seen_on_this_page: set[str] = set()
+        for line in check_from:
+            stripped = line.strip()
+            if (
+                stripped
+                and len(stripped) <= max_line_length
+                and stripped not in seen_on_this_page
+            ):
+                seen_on_this_page.add(stripped)
+                candidate_lines[stripped] = candidate_lines.get(stripped, 0) + 1
+
+    # Eşik üstündeki satırları header/footer olarak işaretle
+    # Mark lines above threshold as header/footer
+    total_pages = len(pages_text)
+    repeating_lines: set[str] = {
+        line
+        for line, count in candidate_lines.items()
+        if count / total_pages >= min_repeat_ratio
+    }
+
+    if not repeating_lines:
+        return pages_text
+
+    # Tekrar eden satırları kaldır / Remove repeating lines
+    cleaned_pages: list[str] = []
+    for page_text in pages_text:
+        lines = page_text.strip().split("\n")
+        filtered = [line for line in lines if line.strip() not in repeating_lines]
+        cleaned_pages.append("\n".join(filtered).strip())
+
+    return cleaned_pages

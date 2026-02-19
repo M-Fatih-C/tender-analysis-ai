@@ -5,6 +5,20 @@ TenderAI PDF Ayrıştırma Paketi / PDF Parsing Package.
 Parses tender specification PDFs and extracts text.
 """
 
-from src.pdf_parser.parser import PDFParser
+from src.pdf_parser.parser import (
+    IhalePDFParser,
+    ParsedDocument,
+    PageContent,
+    TableContent,
+    Section,
+    DocumentMetadata,
+)
 
-__all__ = ["PDFParser"]
+__all__ = [
+    "IhalePDFParser",
+    "ParsedDocument",
+    "PageContent",
+    "TableContent",
+    "Section",
+    "DocumentMetadata",
+]
