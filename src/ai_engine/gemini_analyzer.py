@@ -1,21 +1,17 @@
 """
-TenderAI Gemini AI Analiz Motoru / Gemini AI Analysis Engine.
+TenderAI Gemini AI Analiz Motoru v2.0.
 
-Google Gemini API kullanarak ihale şartname analizi yapar.
+Google Gemini API (yeni google-genai SDK) kullanarak ihale şartname analizi yapar.
 Aynı prompt şablonlarını kullanır, OpenAI yerine Gemini çağırır.
-
-Uses Google Gemini API for tender specification analysis.
-Same prompts, different LLM backend.
 """
 
 import json
 import logging
 import re
 import time
-from dataclasses import dataclass, field
-from datetime import datetime
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from src.ai_engine.prompts import (
     RISK_ANALYSIS_PROMPT,
@@ -32,8 +28,6 @@ logger = logging.getLogger(__name__)
 class GeminiAnalizAI:
     """
     Gemini tabanlı ihale şartname analiz motoru.
-    Gemini-based tender specification analysis engine.
-
     ParsedDocument alır, 6 analiz yapar, sonuçları dict olarak döner.
     """
 
@@ -43,40 +37,22 @@ class GeminiAnalizAI:
         model: str = "gemini-2.0-flash",
         temperature: float = 0.1,
     ) -> None:
-        """
-        GeminiAnalizAI başlat / Initialize GeminiAnalizAI.
-
-        Args:
-            gemini_api_key: Google Gemini API anahtarı
-            model: Gemini model adı
-            temperature: Yanıt sıcaklığı
-        """
-        genai.configure(api_key=gemini_api_key)
-        self._model = genai.GenerativeModel(model)
+        self._client = genai.Client(api_key=gemini_api_key)
+        self._model = model
         self._temperature = temperature
         self._total_tokens = 0
-        logger.info(f"GeminiAnalizAI başlatıldı: model={model}")
+        logger.info(f"GeminiAnalizAI başlatıldı: model={model} (google-genai SDK)")
 
     def analyze(self, parsed_document) -> dict:
-        """
-        Ana analiz pipeline. ParsedDocument alır, dict döner.
-
-        Args:
-            parsed_document: PDF parser'dan gelen doküman
-
-        Returns:
-            Tam analiz sonucu dict
-        """
+        """Ana analiz pipeline. ParsedDocument alır, dict döner."""
         start_time = time.time()
         text = parsed_document.full_text or ""
 
         if not text.strip():
             raise ValueError("Doküman metni boş / Document text is empty")
 
-        # Metnin ilk 30K karakterini kullan (token limiti için)
         context = text[:30000]
-
-        logger.info("Gemini analiz başlıyor / Starting Gemini analysis")
+        logger.info("Gemini analiz başlıyor")
 
         # 6 analiz adımı
         risk = self._analyze_step("risk_analysis", RISK_ANALYSIS_PROMPT, context)
@@ -85,7 +61,6 @@ class GeminiAnalizAI:
         financial = self._analyze_step("financial_summary", FINANCIAL_SUMMARY_PROMPT, context)
         timeline = self._analyze_step("timeline_analysis", TIMELINE_ANALYSIS_PROMPT, context)
 
-        # Executive summary — önceki sonuçları da içerir
         summary_context = (
             f"ÖNCEKİ ANALİZLER:\n"
             f"Risk Analizi: {json.dumps(risk, ensure_ascii=False)[:2000]}\n"
@@ -94,10 +69,8 @@ class GeminiAnalizAI:
         )
         executive = self._analyze_step("executive_summary", EXECUTIVE_SUMMARY_PROMPT, summary_context)
 
-        # Risk skoru hesapla
         risk_score = self._calculate_risk_score(risk)
         risk_level = self._score_to_level(risk_score)
-
         elapsed = time.time() - start_time
 
         result = {
@@ -110,14 +83,12 @@ class GeminiAnalizAI:
             "risk_score": risk_score,
             "risk_level": risk_level,
             "tokens_used": self._total_tokens,
-            "cost_usd": 0.0,  # Gemini ücretsiz tier
+            "cost_usd": 0.0,
             "analysis_time": round(elapsed, 1),
             "model_used": "gemini",
         }
 
-        logger.info(
-            f"Gemini analiz tamamlandı: risk={risk_score}, süre={elapsed:.1f}s"
-        )
+        logger.info(f"Gemini analiz tamamlandı: risk={risk_score}, süre={elapsed:.1f}s")
         return result
 
     def _analyze_step(self, name: str, prompt: str, context: str) -> dict:
@@ -130,18 +101,32 @@ class GeminiAnalizAI:
                 f"Başka açıklama ekleme."
             )
 
-            response = self._model.generate_content(
-                full_prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=self._temperature,
-                    max_output_tokens=4096,
-                ),
-            )
+            # Retry for rate limits
+            max_retries = 2
+            for attempt in range(max_retries + 1):
+                try:
+                    response = self._client.models.generate_content(
+                        model=self._model,
+                        contents=full_prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=self._temperature,
+                            max_output_tokens=4096,
+                        ),
+                    )
 
-            raw = response.text or ""
-            self._total_tokens += len(raw.split()) * 2  # Yaklaşık token tahmini
+                    raw = response.text or ""
+                    self._total_tokens += len(raw.split()) * 2
+                    return self._parse_json(raw)
 
-            return self._parse_json(raw)
+                except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                        if attempt < max_retries:
+                            wait = 30 * (attempt + 1)
+                            logger.warning(f"Gemini rate limit ({name}), {wait}s bekleniyor...")
+                            time.sleep(wait)
+                            continue
+                    raise
 
         except Exception as e:
             logger.error(f"Gemini {name} hatası: {e}")
@@ -149,13 +134,11 @@ class GeminiAnalizAI:
 
     def _parse_json(self, text: str) -> dict:
         """LLM yanıtından JSON çıkar."""
-        # Direkt dene
         try:
             return json.loads(text)
         except json.JSONDecodeError:
             pass
 
-        # ```json ... ``` bloğu
         match = re.search(r"```(?:json)?\s*\n?(.*?)\n?```", text, re.DOTALL)
         if match:
             try:
@@ -163,7 +146,6 @@ class GeminiAnalizAI:
             except json.JSONDecodeError:
                 pass
 
-        # İlk { ... son } arası
         start = text.find("{")
         end = text.rfind("}")
         if start != -1 and end != -1 and end > start:
@@ -178,12 +160,10 @@ class GeminiAnalizAI:
     def _calculate_risk_score(self, risk_data: dict) -> int:
         """Risk skorunu hesapla."""
         try:
-            # Direkt skor varsa kullan
             score = risk_data.get("risk_skoru")
             if score is not None and isinstance(score, (int, float)):
                 return max(0, min(100, int(score)))
 
-            # Riskleri say
             riskler = risk_data.get("riskler", [])
             if not riskler:
                 return 30
@@ -199,7 +179,6 @@ class GeminiAnalizAI:
 
     @staticmethod
     def _score_to_level(score: int) -> str:
-        """Skor → seviye."""
         if score <= 30:
             return "DÜŞÜK"
         elif score <= 50:

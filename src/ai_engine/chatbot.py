@@ -1,15 +1,15 @@
 """
-TenderAI İhale Chatbot / Tender Chatbot.
+TenderAI İhale Chatbot / Tender Chatbot v2.0.
 
 Analiz edilmiş şartname üzerinden RAG ile soru-cevap yapar.
-Gemini veya OpenAI backend kullanır.
+Yeni google-genai SDK kullanır. Fallback: demo yanıtlar.
 """
 
-import json
 import logging
-import re
+import time
 
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 
 from src.utils.demo_data import DEMO_CHAT_RESPONSES
 
@@ -42,22 +42,22 @@ class IhaleChatbot:
     """İhale şartnamesine soru-cevap chatbot."""
 
     def __init__(self, gemini_api_key: str = "", openai_api_key: str = "") -> None:
-        """Init — Gemini veya demo mod."""
+        """Init — google-genai SDK veya demo mod."""
         self._context: str = ""
         self._use_ai = False
+        self._client = None
 
         if gemini_api_key and len(gemini_api_key) > 5:
             try:
-                genai.configure(api_key=gemini_api_key)
-                self._model = genai.GenerativeModel("gemini-2.0-flash")
+                self._client = genai.Client(api_key=gemini_api_key)
                 self._use_ai = True
-                logger.info("Chatbot: Gemini backend aktif")
+                logger.info("Chatbot: Gemini backend aktif (google-genai SDK)")
             except Exception as e:
                 logger.warning(f"Chatbot Gemini init hatası: {e}")
 
     def set_context(self, text: str) -> None:
         """Şartname metnini context olarak ayarla."""
-        self._context = text[:30000]  # Token limiti
+        self._context = text[:30000]
         logger.info(f"Chatbot context set: {len(self._context)} karakter")
 
     def ask(self, question: str, chat_history: list[dict] | None = None) -> str:
@@ -65,13 +65,13 @@ class IhaleChatbot:
         if not self._context:
             return "⚠️ Önce bir şartname yükleyin veya geçmiş analizlerden birini seçin."
 
-        if self._use_ai:
+        if self._use_ai and self._client:
             return self._ask_ai(question, chat_history or [])
         else:
             return self._ask_demo(question)
 
     def _ask_ai(self, question: str, history: list[dict]) -> str:
-        """Gemini ile yanıtla."""
+        """Gemini ile yanıtla (yeni SDK)."""
         try:
             history_text = ""
             for msg in history[-5:]:
@@ -86,14 +86,32 @@ class IhaleChatbot:
                 prompt += f"ÖNCEKİ KONUŞMA:\n{history_text}\n\n"
             prompt += f"KULLANICI SORUSU: {question}\n\nYANIT:"
 
-            response = self._model.generate_content(
-                prompt,
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.2,
-                    max_output_tokens=1024,
-                ),
-            )
-            return response.text or "Yanıt alınamadı."
+            # Retry logic for rate limits
+            max_retries = 2
+            for attempt in range(max_retries + 1):
+                try:
+                    response = self._client.models.generate_content(
+                        model="gemini-2.0-flash",
+                        contents=prompt,
+                        config=types.GenerateContentConfig(
+                            temperature=0.2,
+                            max_output_tokens=1024,
+                        ),
+                    )
+                    return response.text or "Yanıt alınamadı."
+                except Exception as e:
+                    err_str = str(e)
+                    if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                        if attempt < max_retries:
+                            wait = 30 * (attempt + 1)
+                            logger.warning(f"Gemini rate limit, {wait}s bekleniyor... (deneme {attempt + 1})")
+                            time.sleep(wait)
+                            continue
+                        else:
+                            logger.warning("Gemini rate limit aşıldı, demo yanıt kullanılıyor")
+                            return f"⚠️ AI kota limiti aşıldı. Demo yanıt:\n\n{self._ask_demo(question)}"
+                    raise
+
         except Exception as e:
             logger.error(f"Chatbot AI hatası: {e}")
             return f"⚠️ AI hatası oluştu. Demo yanıt kullanılıyor.\n\n{self._ask_demo(question)}"
