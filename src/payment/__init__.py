@@ -1,10 +1,10 @@
 """
 TenderAI Ödeme Paketi / Payment Package.
 
-Abonelik ve ödeme yönetimi.
-Subscription and payment management.
+Plan yönetimi ve ödeme altyapısı.
+Plan management and payment infrastructure.
 """
 
-from src.payment.payment import PaymentManager
+from src.payment.payment import PaymentManager, PLANS
 
-__all__ = ["PaymentManager"]
+__all__ = ["PaymentManager", "PLANS"]

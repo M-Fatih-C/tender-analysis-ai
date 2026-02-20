@@ -1,163 +1,371 @@
 """
-TenderAI Ödeme Sistemi / Payment System.
+TenderAI Ödeme ve Plan Yönetimi / Payment & Plan Management.
 
-Abonelik planları ve ödeme işlemlerini yönetir.
-Manages subscription plans and payment processing.
+Abonelik planları, limit kontrolü ve ödeme altyapısı iskeleti.
+Subscription plans, limit checks, and payment infrastructure scaffold.
 
-Bu modül Modül 7'de implement edilecektir.
-This module will be implemented in Module 7.
+MVP aşamasında gerçek ödeme entegrasyonu (iyzico, PayTR) yok.
+No real payment integration in MVP phase.
 """
 
-from dataclasses import dataclass
-from enum import Enum
+import logging
+from datetime import datetime, timezone, timedelta
+from typing import Any
+
+from src.database.db import (
+    create_payment,
+    update_payment_status,
+    update_user,
+    get_user_by_id,
+    get_user_analyses,
+    check_active_subscription,
+)
+from src.database.models import User
+
+logger = logging.getLogger(__name__)
 
 
-class PlanType(Enum):
-    """Abonelik planı türleri / Subscription plan types."""
+# ============================================================
+# Plan Tanımları / Plan Definitions
+# ============================================================
 
-    FREE = "ücretsiz"
-    BASIC = "temel"
-    PROFESSIONAL = "profesyonel"
-    ENTERPRISE = "kurumsal"
+PLANS: dict[str, dict[str, Any]] = {
+    "free": {
+        "name": "Ücretsiz",
+        "price_monthly_try": 0,
+        "max_analysis_per_month": 3,
+        "features": [
+            "Temel risk analizi",
+            "PDF metin çıkarma",
+            "PDF rapor indirme",
+        ],
+    },
+    "starter": {
+        "name": "Başlangıç",
+        "price_monthly_try": 5_000,
+        "max_analysis_per_month": 20,
+        "features": [
+            "6 analiz modülü",
+            "Yönetici özeti",
+            "PDF rapor indirme",
+            "Analiz geçmişi",
+            "E-posta desteği",
+        ],
+    },
+    "pro": {
+        "name": "Profesyonel",
+        "price_monthly_try": 15_000,
+        "max_analysis_per_month": 9999,  # Sınırsız
+        "features": [
+            "Sınırsız analiz",
+            "Öncelikli destek",
+            "API erişimi",
+            "Özel raporlama",
+            "Tüm analiz modülleri",
+        ],
+    },
+}
 
 
-@dataclass
-class SubscriptionPlan:
-    """
-    Abonelik planı / Subscription plan.
-
-    Attributes:
-        plan_type: Plan türü / Plan type
-        name: Plan adı / Plan name
-        price_monthly: Aylık fiyat (TL) / Monthly price (TRY)
-        max_analyses: Aylık maksimum analiz sayısı / Monthly max analyses
-        features: Plan özellikleri / Plan features
-    """
-
-    plan_type: PlanType = PlanType.FREE
-    name: str = ""
-    price_monthly: float = 0.0
-    max_analyses: int = 0
-    features: list[str] = None
-
-    def __post_init__(self):
-        if self.features is None:
-            self.features = []
+# ============================================================
+# PaymentManager Sınıfı / PaymentManager Class
+# ============================================================
 
 
 class PaymentManager:
     """
-    Ödeme yöneticisi / Payment manager.
+    Plan yönetimi ve ödeme işlemleri / Plan management and payment operations.
 
-    Abonelik planları, ödeme işlemleri ve
-    fatura yönetimini sağlar.
+    Kullanıcı plan limitlerini kontrol eder, plan yükseltme işlemlerini
+    yönetir ve ödeme altyapısı iskeletini sağlar.
 
-    Manages subscription plans, payment processing,
-    and invoice management.
+    Manages user plan limits, plan upgrades, and payment infrastructure.
     """
 
-    def __init__(self) -> None:
-        """PaymentManager başlat / Initialize PaymentManager."""
-        self._plans: dict[PlanType, SubscriptionPlan] = {}
-        self._initialize_plans()
+    def __init__(self, db_session: Any) -> None:
+        """
+        PaymentManager başlat / Initialize PaymentManager.
 
-    def _initialize_plans(self) -> None:
-        """Varsayılan abonelik planlarını tanımla / Define default subscription plans."""
-        self._plans = {
-            PlanType.FREE: SubscriptionPlan(
-                plan_type=PlanType.FREE,
-                name="Ücretsiz",
-                price_monthly=0.0,
-                max_analyses=3,
-                features=["Temel analiz", "PDF yükleme"],
-            ),
-            PlanType.BASIC: SubscriptionPlan(
-                plan_type=PlanType.BASIC,
-                name="Temel",
-                price_monthly=299.0,
-                max_analyses=20,
-                features=["Temel analiz", "PDF yükleme", "Risk skoru", "PDF rapor"],
-            ),
-            PlanType.PROFESSIONAL: SubscriptionPlan(
-                plan_type=PlanType.PROFESSIONAL,
-                name="Profesyonel",
-                price_monthly=599.0,
-                max_analyses=100,
-                features=["Tam analiz", "PDF yükleme", "Risk skoru", "PDF rapor", "API erişimi"],
-            ),
-            PlanType.ENTERPRISE: SubscriptionPlan(
-                plan_type=PlanType.ENTERPRISE,
-                name="Kurumsal",
-                price_monthly=999.0,
-                max_analyses=-1,  # Sınırsız / Unlimited
-                features=["Tam analiz", "PDF yükleme", "Risk skoru", "PDF rapor", "API erişimi", "Öncelikli destek"],
-            ),
+        Args:
+            db_session: SQLAlchemy Session nesnesi / SQLAlchemy Session object
+        """
+        self.db = db_session
+        logger.info("PaymentManager başlatıldı / initialized")
+
+    # ----------------------------------------------------------
+    # Plan Bilgileri / Plan Information
+    # ----------------------------------------------------------
+
+    @staticmethod
+    def get_plans() -> dict[str, dict]:
+        """
+        Tüm planları döndür / Return all plans.
+
+        Returns:
+            Plan tanımları sözlüğü / Plan definitions dictionary
+        """
+        return PLANS
+
+    @staticmethod
+    def get_plan(plan_key: str) -> dict | None:
+        """
+        Belirli bir planı döndür / Return a specific plan.
+
+        Args:
+            plan_key: Plan anahtarı (free/starter/pro)
+
+        Returns:
+            Plan detayları veya None / Plan details or None
+        """
+        return PLANS.get(plan_key)
+
+    # ----------------------------------------------------------
+    # Analiz Limit Kontrolü / Analysis Limit Check
+    # ----------------------------------------------------------
+
+    def check_can_analyze(self, user: User) -> tuple[bool, str]:
+        """
+        Kullanıcı analiz yapabilir mi kontrol et.
+        Check if user can perform analysis.
+
+        Args:
+            user: Kullanıcı nesnesi / User object
+
+        Returns:
+            (yapabilir_mi, mesaj) / (can_analyze, message)
+        """
+        plan_key = user.plan or "free"
+        plan = PLANS.get(plan_key, PLANS["free"])
+        max_analysis = plan["max_analysis_per_month"]
+        current_count = user.analysis_count or 0
+
+        # Sınırsız plan kontrolü
+        if max_analysis >= 9999:
+            return True, "Sınırsız analiz hakkınız var."
+
+        if current_count >= max_analysis:
+            return (
+                False,
+                f"Aylık analiz limitiniz ({max_analysis}) doldu. "
+                f"Planınızı yükselterek daha fazla analiz yapabilirsiniz."
+            )
+
+        remaining = max_analysis - current_count
+        return True, f"Kalan analiz hakkınız: {remaining}/{max_analysis}"
+
+    def get_user_plan_info(self, user: User) -> dict:
+        """
+        Kullanıcının plan bilgilerini döndür.
+        Return user's plan information.
+
+        Args:
+            user: Kullanıcı nesnesi / User object
+
+        Returns:
+            Plan bilgileri / Plan information dict
+        """
+        plan_key = user.plan or "free"
+        plan = PLANS.get(plan_key, PLANS["free"])
+        max_analysis = plan["max_analysis_per_month"]
+        current_count = user.analysis_count or 0
+        remaining = max(0, max_analysis - current_count) if max_analysis < 9999 else 9999
+        has_subscription = check_active_subscription(self.db, user.id)
+
+        return {
+            "plan_key": plan_key,
+            "plan_name": plan["name"],
+            "price_monthly_try": plan["price_monthly_try"],
+            "max_analysis_per_month": max_analysis,
+            "analysis_count": current_count,
+            "remaining_analyses": remaining,
+            "features": plan["features"],
+            "has_active_subscription": has_subscription,
+            "is_unlimited": max_analysis >= 9999,
         }
 
-    def get_plans(self) -> list[SubscriptionPlan]:
-        """
-        Tüm abonelik planlarını getir / Get all subscription plans.
+    # ----------------------------------------------------------
+    # Kullanım İstatistikleri / Usage Statistics
+    # ----------------------------------------------------------
 
-        Returns:
-            Plan listesi / List of plans
+    def get_usage_stats(self, user: User) -> dict:
         """
-        return list(self._plans.values())
-
-    def get_plan(self, plan_type: PlanType) -> SubscriptionPlan:
-        """
-        Belirli bir planı getir / Get a specific plan.
+        Bu ayki kullanım istatistiklerini döndür.
+        Return this month's usage statistics.
 
         Args:
-            plan_type: Plan türü / Plan type
+            user: Kullanıcı nesnesi / User object
 
         Returns:
-            Abonelik planı / Subscription plan
+            Kullanım istatistikleri / Usage statistics dict
         """
-        return self._plans[plan_type]
+        plan_key = user.plan or "free"
+        plan = PLANS.get(plan_key, PLANS["free"])
+        max_analysis = plan["max_analysis_per_month"]
+        current_count = user.analysis_count or 0
 
-    def process_payment(self, user_id: int, plan_type: PlanType, payment_method: str) -> dict:
+        # Son analizler / Recent analyses
+        recent = get_user_analyses(self.db, user.id, limit=5)
+
+        # Yüzde hesapla / Calculate percentage
+        if max_analysis >= 9999:
+            usage_percent = 0
+        elif max_analysis > 0:
+            usage_percent = min(100, round((current_count / max_analysis) * 100))
+        else:
+            usage_percent = 100
+
+        return {
+            "plan_key": plan_key,
+            "plan_name": plan["name"],
+            "total_used": current_count,
+            "max_allowed": max_analysis,
+            "usage_percent": usage_percent,
+            "recent_analyses_count": len(recent),
+            "is_limit_reached": current_count >= max_analysis and max_analysis < 9999,
+        }
+
+    # ----------------------------------------------------------
+    # Plan Yükseltme / Plan Upgrade
+    # ----------------------------------------------------------
+
+    def upgrade_plan(
+        self,
+        user: User,
+        new_plan: str,
+        payment_method: str = "credit_card",
+    ) -> tuple[bool, str]:
         """
-        Ödeme işlemi yap / Process payment.
+        Kullanıcının planını yükselt (simüle ödeme).
+        Upgrade user's plan (simulated payment).
+
+        MVP'de gerçek ödeme yapılmaz, sadece plan güncellenir ve
+        ödeme kaydı oluşturulur.
 
         Args:
-            user_id: Kullanıcı ID / User ID
-            plan_type: Seçilen plan / Selected plan
+            user: Kullanıcı nesnesi / User object
+            new_plan: Yeni plan anahtarı (starter/pro)
             payment_method: Ödeme yöntemi / Payment method
 
         Returns:
-            Ödeme sonucu / Payment result
-
-        Raises:
-            NotImplementedError: Modül 7'de implement edilecek
+            (başarılı_mı, mesaj) / (success, message)
         """
-        raise NotImplementedError("Modül 7'de implement edilecek / Will be implemented in Module 7")
+        # Plan geçerliliği / Plan validity
+        if new_plan not in PLANS:
+            return False, f"Geçersiz plan: {new_plan}"
 
-    def check_subscription(self, user_id: int) -> dict:
+        target_plan = PLANS[new_plan]
+        current_plan_key = user.plan or "free"
+
+        # Aynı plan kontrolü
+        if current_plan_key == new_plan:
+            return False, "Zaten bu plana sahipsiniz."
+
+        # Düşürme kontrolü (sadece yükseltme izinli)
+        plan_order = {"free": 0, "starter": 1, "pro": 2}
+        if plan_order.get(new_plan, 0) <= plan_order.get(current_plan_key, 0):
+            return False, "Sadece üst planlara yükseltme yapılabilir."
+
+        # Ödeme kaydı oluştur (simüle) / Create payment record (simulated)
+        now = datetime.now(timezone.utc)
+        period_end = now + timedelta(days=30)
+
+        try:
+            payment = create_payment(
+                self.db,
+                user_id=user.id,
+                amount_try=float(target_plan["price_monthly_try"]),
+                plan=new_plan,
+                payment_method=payment_method,
+                period_start=now,
+                period_end=period_end,
+            )
+
+            # MVP: Ödemeyi otomatik onayla / Auto-approve payment in MVP
+            update_payment_status(
+                self.db, payment.id,
+                status="completed",
+                transaction_id=f"SIM_{int(now.timestamp())}",
+            )
+
+            # Kullanıcı planını güncelle / Update user plan
+            new_max = target_plan["max_analysis_per_month"]
+            update_user(
+                self.db, user.id,
+                plan=new_plan,
+                max_analysis_per_month=new_max,
+                analysis_count=0,  # Yeni plan → sayaç sıfırla
+            )
+
+            logger.info(
+                f"Plan yükseltildi / Plan upgraded: user_id={user.id}, "
+                f"{current_plan_key} → {new_plan}"
+            )
+            return True, f"Planınız {target_plan['name']} olarak güncellendi!"
+
+        except Exception as e:
+            logger.error(f"Plan yükseltme hatası / Upgrade error: {e}", exc_info=True)
+            return False, f"Plan yükseltme sırasında hata: {e}"
+
+    # ----------------------------------------------------------
+    # Plan Karşılaştırma / Plan Comparison
+    # ----------------------------------------------------------
+
+    @staticmethod
+    def get_plan_comparison() -> list[dict]:
         """
-        Kullanıcı abonelik durumunu kontrol et / Check user subscription status.
-
-        Args:
-            user_id: Kullanıcı ID / User ID
+        Plan karşılaştırma tablosu verisi döndür.
+        Return plan comparison table data.
 
         Returns:
-            Abonelik durumu / Subscription status
-
-        Raises:
-            NotImplementedError: Modül 7'de implement edilecek
+            Karşılaştırma listesi / Comparison list
         """
-        raise NotImplementedError("Modül 7'de implement edilecek / Will be implemented in Module 7")
+        comparison = []
+        for key, plan in PLANS.items():
+            max_a = plan["max_analysis_per_month"]
+            comparison.append({
+                "plan_key": key,
+                "plan_name": plan["name"],
+                "price": f"{plan['price_monthly_try']:,.0f} ₺/ay" if plan["price_monthly_try"] > 0 else "Ücretsiz",
+                "analysis_limit": "Sınırsız" if max_a >= 9999 else str(max_a),
+                "features": plan["features"],
+            })
+        return comparison
 
-    def cancel_subscription(self, user_id: int) -> bool:
+    # ----------------------------------------------------------
+    # Ödeme Entegrasyonu Placeholder'ları / Payment Integration Placeholders
+    # ----------------------------------------------------------
+
+    def _process_payment_iyzico(
+        self, user: User, amount: float, card_info: dict
+    ) -> bool:
         """
-        Aboneliği iptal et / Cancel subscription.
+        iyzico ödeme entegrasyonu — TODO.
+        iyzico payment integration — TODO.
 
         Args:
-            user_id: Kullanıcı ID / User ID
-
-        Returns:
-            İptal başarılı mı / Is cancellation successful
+            user: Kullanıcı / User
+            amount: Tutar (TL) / Amount (TRY)
+            card_info: Kart bilgileri / Card details
 
         Raises:
-            NotImplementedError: Modül 7'de implement edilecek
+            NotImplementedError: v2'de implement edilecek
         """
-        raise NotImplementedError("Modül 7'de implement edilecek / Will be implemented in Module 7")
+        raise NotImplementedError(
+            "iyzico entegrasyonu Modül 8 v2'de implement edilecek / "
+            "iyzico integration will be implemented in Module 8 v2"
+        )
+
+    def _process_payment_paytr(
+        self, user: User, amount: float, card_info: dict
+    ) -> bool:
+        """
+        PayTR ödeme entegrasyonu — TODO.
+        PayTR payment integration — TODO.
+
+        Raises:
+            NotImplementedError: v2'de implement edilecek
+        """
+        raise NotImplementedError(
+            "PayTR entegrasyonu Modül 8 v2'de implement edilecek / "
+            "PayTR integration will be implemented in Module 8 v2"
+        )
