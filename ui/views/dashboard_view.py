@@ -25,7 +25,16 @@ def render_dashboard() -> None:
         db_mgr.init_db()
         with db_mgr.get_db() as db:
             if user_id:
-                analyses = get_user_analyses(db, user_id, limit=20)
+                raw = get_user_analyses(db, user_id, limit=20)
+                # ORM → dict (session kapandıktan sonra erişim için)
+                for a in raw:
+                    analyses.append({
+                        "file_name": a.file_name,
+                        "risk_score": a.risk_score,
+                        "risk_level": a.risk_level,
+                        "status": a.status,
+                        "created_at": a.created_at,
+                    })
                 stats = get_analysis_stats(db, user_id)
     except Exception:
         pass
@@ -70,19 +79,19 @@ def render_dashboard() -> None:
             st.info("Henüz analiz yapılmamış. **Yeni Analiz** sayfasından başlayın!")
         else:
             for a in analyses[:5]:
-                score = a.risk_score
+                score = a["risk_score"]
                 border_c = "#27ae60" if score and score <= 40 else "#f39c12" if score and score <= 70 else "#e74c3c" if score else "#555"
                 score_c = border_c
-                date_str = a.created_at.strftime("%d.%m.%Y") if a.created_at else "—"
-                status_icon = "✅" if a.status == "completed" else "⏳" if a.status == "pending" else "❌"
+                date_str = a["created_at"].strftime("%d.%m.%Y") if a["created_at"] else "—"
+                status_icon = "✅" if a["status"] == "completed" else "⏳" if a["status"] == "pending" else "❌"
 
                 st.markdown(
-                    f'<div class="analysis-card" style="border-left-color:{border_c};">'
+                    f'<div class="analysis-card" style="border-left-color:{border_c};">' 
                     f'<div class="card-header">'
-                    f'<span class="card-title">📄 {(a.file_name or "—")[:35]}</span>'
+                    f'<span class="card-title">📄 {(a["file_name"] or "—")[:35]}</span>'
                     f'<span class="card-score" style="color:{score_c};">{score if score is not None else "—"}</span>'
                     f'</div>'
-                    f'<div class="card-date">{date_str} · {status_icon} {a.status}</div>'
+                    f'<div class="card-date">{date_str} · {status_icon} {a["status"]}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -101,9 +110,9 @@ def render_dashboard() -> None:
 
 def _render_risk_pie(analyses: list) -> None:
     """Risk dağılımı donut chart."""
-    low = sum(1 for a in analyses if a.risk_score and a.risk_score <= 40)
-    med = sum(1 for a in analyses if a.risk_score and 41 <= a.risk_score <= 70)
-    high = sum(1 for a in analyses if a.risk_score and a.risk_score > 70)
+    low = sum(1 for a in analyses if a["risk_score"] and a["risk_score"] <= 40)
+    med = sum(1 for a in analyses if a["risk_score"] and 41 <= a["risk_score"] <= 70)
+    high = sum(1 for a in analyses if a["risk_score"] and a["risk_score"] > 70)
 
     if low + med + high == 0:
         st.caption("Veri yok")
