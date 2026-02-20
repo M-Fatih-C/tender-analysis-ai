@@ -23,6 +23,8 @@ def render_analysis() -> None:
         _stage_upload()
     elif state == "analyzing":
         _stage_analyzing()
+    elif state == "batch_analyzing":
+        _stage_batch_analyzing()
     elif state == "results":
         _stage_results()
 
@@ -32,7 +34,7 @@ def render_analysis() -> None:
 # ==============================================================
 
 def _stage_upload() -> None:
-    """Dosya yükleme aşaması."""
+    """Dosya yükleme aşaması — tekli veya çoklu."""
     plan = st.session_state.get("user_plan", "free")
     count = st.session_state.get("analysis_count", 0)
     limit_map = {"free": 3, "starter": 20, "pro": 9999}
@@ -45,19 +47,41 @@ def _stage_upload() -> None:
             st.rerun()
         return
 
+    # Mod seçimi
+    mode_col1, mode_col2 = st.columns(2)
+    with mode_col1:
+        single = st.button("📄 Tekli Analiz", use_container_width=True,
+                           type="primary" if not st.session_state.get("batch_mode") else "secondary")
+        if single:
+            st.session_state["batch_mode"] = False
+            st.rerun()
+    with mode_col2:
+        batch = st.button("📚 Çoklu Analiz (Batch)", use_container_width=True,
+                          type="primary" if st.session_state.get("batch_mode") else "secondary")
+        if batch:
+            st.session_state["batch_mode"] = True
+            st.rerun()
+
+    batch_mode = st.session_state.get("batch_mode", False)
+
     st.markdown(
         '<div style="text-align:center;padding:1rem 0;">'
-        '<div style="font-size:3rem;">📤</div>'
-        '<p style="color:#8892b0;">Şartname PDF\'inizi sürükleyip bırakın veya tıklayarak seçin</p>'
+        f'<div style="font-size:3rem;">{"📚" if batch_mode else "📤"}</div>'
+        f'<p style="color:#8892b0;">{"Birden fazla şartname PDF\'i seçin" if batch_mode else "Şartname PDF\'inizi sürükleyip bırakın veya tıklayarak seçin"}</p>'
         '<p style="font-size:0.75rem;color:#555;">Maksimum 50MB • Sadece PDF</p>'
         '</div>',
         unsafe_allow_html=True,
     )
 
-    uploaded = st.file_uploader(
-        "PDF Yükle", type=["pdf"], label_visibility="collapsed",
-        key="pdf_uploader",
-    )
+    if batch_mode:
+        _batch_upload(plan, count, limit)
+    else:
+        _single_upload()
+
+
+def _single_upload() -> None:
+    """Tekli dosya yükleme."""
+    uploaded = st.file_uploader("PDF Yükle", type=["pdf"], label_visibility="collapsed", key="pdf_uploader")
 
     if uploaded:
         size_mb = len(uploaded.getvalue()) / (1024 * 1024)
@@ -84,7 +108,6 @@ def _stage_upload() -> None:
                 unsafe_allow_html=True,
             )
 
-        # Ön izleme
         with st.expander("📖 Ön İzleme"):
             try:
                 from src.pdf_parser.parser import IhalePDFParser
@@ -103,6 +126,229 @@ def _stage_upload() -> None:
             st.session_state["uploaded_file_size"] = size_mb
             st.session_state["analysis_state"] = "analyzing"
             st.rerun()
+
+
+def _batch_upload(plan: str, count: int, limit: int) -> None:
+    """Çoklu dosya yükleme — batch analiz."""
+    remaining = max(0, limit - count) if limit < 9999 else 999
+    max_files = min(10, remaining)
+
+    uploaded_files = st.file_uploader(
+        "PDF Yükle", type=["pdf"], label_visibility="collapsed",
+        key="batch_uploader", accept_multiple_files=True,
+    )
+
+    if uploaded_files:
+        if len(uploaded_files) > max_files:
+            st.warning(f"⚠️ Maksimum {max_files} dosya seçebilirsiniz. İlk {max_files} dosya alınacak.")
+            uploaded_files = uploaded_files[:max_files]
+
+        # Dosya kartları
+        st.markdown(f"##### 📋 {len(uploaded_files)} Dosya Seçildi")
+        for i, f in enumerate(uploaded_files):
+            size_mb = len(f.getvalue()) / (1024 * 1024)
+            st.markdown(
+                f'<div class="analysis-card" style="border-left-color:#667eea;">'
+                f'<div class="card-header">'
+                f'<span class="card-title">📄 {f.name[:35]}</span>'
+                f'<span style="font-size:0.75rem;color:#8892b0;">{format_file_size(size_mb)}</span>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        if st.button("🚀 Toplu AI Analizi Başlat", type="primary", use_container_width=True):
+            # Store all files for batch processing
+            batch_items = []
+            for f in uploaded_files:
+                batch_items.append({
+                    "name": f.name,
+                    "bytes": f.getvalue(),
+                    "size_mb": len(f.getvalue()) / (1024 * 1024),
+                })
+            st.session_state["batch_items"] = batch_items
+            st.session_state["analysis_state"] = "batch_analyzing"
+            st.rerun()
+
+
+# ==============================================================
+# AŞAMA 2B: BATCH ANALYZING
+# ==============================================================
+
+def _stage_batch_analyzing() -> None:
+    """Çoklu dosya analiz süreci."""
+    batch_items = st.session_state.get("batch_items", [])
+
+    if not batch_items:
+        st.session_state["analysis_state"] = "upload"
+        st.rerun()
+        return
+
+    total = len(batch_items)
+    st.markdown(
+        f'<div style="text-align:center;padding:1rem;">'
+        f'<div style="font-size:3rem;">📚</div>'
+        f'<h3>Toplu Analiz — {total} Dosya</h3>'
+        f'<p style="color:#8892b0;">Her dosya sırayla analiz ediliyor</p>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    overall_progress = st.progress(0)
+    results_container = st.container()
+    results = []
+
+    for idx, item in enumerate(batch_items):
+        file_name = item["name"]
+        file_bytes = item["bytes"]
+        pct = (idx / total)
+        overall_progress.progress(pct, text=f"({idx + 1}/{total}) {file_name[:30]}...")
+
+        with results_container:
+            status_placeholder = st.empty()
+            status_placeholder.markdown(
+                f'<div class="analysis-card" style="border-left-color:#f39c12;">'
+                f'<div class="card-header">'
+                f'<span class="card-title">🔄 {file_name[:35]}</span>'
+                f'<span style="color:#f39c12;">Analiz ediliyor...</span>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+
+        try:
+            # Parse
+            from src.pdf_parser.parser import IhalePDFParser
+            parser = IhalePDFParser()
+            doc = parser.parse(file_bytes)
+
+            # AI Analysis — same fallback chain
+            result = None
+            model_used = "demo"
+            demo = st.session_state.get("demo_mode", False)
+
+            if not demo:
+                from config.settings import settings
+                try:
+                    from src.ai_engine.analyzer import IhaleAnalizAI
+                    ai = IhaleAnalizAI(api_key=settings.OPENAI_API_KEY, model="gpt-4o-mini")
+                    result = asyncio.get_event_loop().run_until_complete(ai.analyze(doc))
+                    if isinstance(result, dict):
+                        model_used = "openai"
+                except Exception:
+                    pass
+
+                if result is None:
+                    try:
+                        from src.ai_engine.gemini_analyzer import GeminiAnalizAI
+                        gem = GeminiAnalizAI(gemini_api_key=settings.GEMINI_API_KEY)
+                        result = gem.analyze(doc)
+                        model_used = "gemini"
+                    except Exception:
+                        pass
+
+            if result is None:
+                result = dict(DEMO_ANALYSIS_RESULT)
+                result["model_used"] = "demo"
+                model_used = "demo"
+
+            score = result.get("risk_score", 0)
+            level = result.get("risk_level", "")
+            color = risk_color_hex(score) if score else "#555"
+
+            # Save to DB
+            _save_batch_result(file_name, item["size_mb"], doc, result, model_used)
+
+            results.append({"name": file_name, "score": score, "level": level, "status": "✅"})
+
+            status_placeholder.markdown(
+                f'<div class="analysis-card" style="border-left-color:{color};">'
+                f'<div class="card-header">'
+                f'<span class="card-title">✅ {file_name[:35]}</span>'
+                f'<span class="card-score" style="color:{color};">{score}</span>'
+                f'</div>'
+                f'<div class="card-date">{level} • {model_used}</div></div>',
+                unsafe_allow_html=True,
+            )
+
+        except Exception as e:
+            results.append({"name": file_name, "score": None, "level": "HATA", "status": "❌"})
+            status_placeholder.markdown(
+                f'<div class="analysis-card" style="border-left-color:#e74c3c;">'
+                f'<div class="card-header">'
+                f'<span class="card-title">❌ {file_name[:35]}</span>'
+                f'<span style="color:#e74c3c;">Hata</span>'
+                f'</div>'
+                f'<div class="card-date">{str(e)[:50]}</div></div>',
+                unsafe_allow_html=True,
+            )
+
+    overall_progress.progress(1.0, text="Tamamlandı!")
+
+    # Özet
+    ok_count = sum(1 for r in results if r["status"] == "✅")
+    st.markdown(
+        f'<div class="advice-card advice-gir" style="margin-top:1rem;">'
+        f'<div class="advice-icon">🏁</div>'
+        f'<div class="advice-title">{ok_count}/{total} analiz tamamlandı</div>'
+        f'<div class="advice-text">Sonuçları görmek için Dashboard veya Geçmiş Analizler sayfasına gidin</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        if st.button("📊 Dashboard'a Git", type="primary", use_container_width=True):
+            st.session_state["analysis_state"] = "upload"
+            st.session_state["current_page"] = "dashboard"
+            st.rerun()
+    with c2:
+        if st.button("📁 Geçmiş Analizler", use_container_width=True):
+            st.session_state["analysis_state"] = "upload"
+            st.session_state["current_page"] = "history"
+            st.rerun()
+    with c3:
+        if st.button("📚 Yeni Batch", use_container_width=True):
+            st.session_state["analysis_state"] = "upload"
+            st.session_state["batch_mode"] = True
+            st.rerun()
+
+
+def _save_batch_result(file_name, size_mb, doc, result, model_used):
+    """Batch analiz sonucunu DB'ye kaydet."""
+    try:
+        user_id = st.session_state.get("user_id", 0)
+        from src.database.db import DatabaseManager, create_analysis, update_analysis_result
+        db_mgr = DatabaseManager()
+        db_mgr.init_db()
+        with db_mgr.get_db() as db:
+            analysis = create_analysis(
+                db, user_id=user_id, file_name=file_name,
+                file_size_mb=size_mb, total_pages=doc.metadata.total_pages,
+            )
+            db.commit()
+
+            es = result.get("executive_summary", {})
+            summary = es.get("ozet", "") if isinstance(es, dict) else str(es)[:200]
+
+            update_analysis_result(
+                db, analysis.id,
+                result_json=json.dumps(result, ensure_ascii=False, default=str),
+                risk_score=result.get("risk_score"),
+                risk_level=result.get("risk_level"),
+                executive_summary=summary,
+                model_used=model_used,
+                tokens_used=result.get("tokens_used"),
+                cost_usd=result.get("cost_usd"),
+                analysis_duration_seconds=result.get("analysis_time"),
+            )
+            db.commit()
+
+        # Count güncelle
+        count = st.session_state.get("analysis_count", 0)
+        st.session_state["analysis_count"] = count + 1
+    except Exception:
+        pass
 
 
 # ==============================================================
