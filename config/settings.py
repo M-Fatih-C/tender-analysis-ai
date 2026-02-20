@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     # === Uygulama / Application ===
     APP_NAME: str = "TenderAI"
-    APP_VERSION: str = "1.0.0"
+    APP_VERSION: str = "2.0.0"
     DEBUG: bool = False
 
     # === Demo Modu / Demo Mode ===
@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     UPLOAD_DIR: Path = BASE_DIR / "data" / "uploads"
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_EXTENSIONS: list[str] = [".pdf"]
+
+    # === Bildirimler / Notifications ===
+    NOTIFICATION_ENABLED: bool = True
+    MAX_CHAT_MESSAGES_PER_DAY: int = 50
 
     # === Logging ===
     LOG_LEVEL: str = "INFO"

@@ -595,3 +595,128 @@ def create_report(
     db.flush()
     logger.info(f"Rapor oluşturuldu / Report created: id={report.id}")
     return report
+
+
+# ============================================================
+# Firma Profili CRUD / Company Profile CRUD
+# ============================================================
+
+
+def create_or_update_company_profile(db: Session, user_id: int, **kwargs) -> "CompanyProfile":
+    """Firma profili oluştur veya güncelle / Create or update company profile."""
+    from src.database.models import CompanyProfile
+    profile = db.query(CompanyProfile).filter(CompanyProfile.user_id == user_id).first()
+    if profile:
+        for k, v in kwargs.items():
+            if hasattr(profile, k):
+                setattr(profile, k, v)
+    else:
+        profile = CompanyProfile(user_id=user_id, **kwargs)
+        db.add(profile)
+    db.flush()
+    return profile
+
+
+def get_company_profile(db: Session, user_id: int):
+    """Firma profilini getir / Get company profile."""
+    from src.database.models import CompanyProfile
+    return db.query(CompanyProfile).filter(CompanyProfile.user_id == user_id).first()
+
+
+# ============================================================
+# Chat CRUD
+# ============================================================
+
+
+def save_chat_message(db: Session, analysis_id: int, user_id: int, role: str, message: str):
+    """Chat mesajı kaydet / Save chat message."""
+    from src.database.models import ChatMessage
+    msg = ChatMessage(analysis_id=analysis_id, user_id=user_id, role=role, message=message)
+    db.add(msg)
+    db.flush()
+    return msg
+
+
+def get_chat_history(db: Session, analysis_id: int, limit: int = 50) -> list:
+    """Chat geçmişini getir / Get chat history."""
+    from src.database.models import ChatMessage
+    return (
+        db.query(ChatMessage)
+        .filter(ChatMessage.analysis_id == analysis_id)
+        .order_by(ChatMessage.created_at.asc())
+        .limit(limit)
+        .all()
+    )
+
+
+# ============================================================
+# Bildirim CRUD / Notification CRUD
+# ============================================================
+
+
+def create_notification(db: Session, user_id: int, title: str, message: str,
+                        type_: str = "info", link: str | None = None):
+    """Bildirim oluştur / Create notification."""
+    from src.database.models import Notification
+    n = Notification(user_id=user_id, title=title, message=message, type=type_, link=link)
+    db.add(n)
+    db.flush()
+    return n
+
+
+def get_user_notifications(db: Session, user_id: int, unread_only: bool = False, limit: int = 20) -> list:
+    """Kullanıcı bildirimlerini getir / Get user notifications."""
+    from src.database.models import Notification
+    q = db.query(Notification).filter(Notification.user_id == user_id)
+    if unread_only:
+        q = q.filter(Notification.is_read == False)  # noqa: E712
+    return q.order_by(Notification.created_at.desc()).limit(limit).all()
+
+
+def mark_notification_read(db: Session, notification_id: int):
+    """Bildirimi okundu yap / Mark notification as read."""
+    from src.database.models import Notification
+    n = db.query(Notification).filter(Notification.id == notification_id).first()
+    if n:
+        n.is_read = True
+        db.flush()
+    return n
+
+
+def get_unread_notification_count(db: Session, user_id: int) -> int:
+    """Okunmamış bildirim sayısı / Get unread count."""
+    from src.database.models import Notification
+    return db.query(Notification).filter(
+        Notification.user_id == user_id, Notification.is_read == False  # noqa: E712
+    ).count()
+
+
+# ============================================================
+# Karşılaştırma CRUD / Comparison CRUD
+# ============================================================
+
+
+def create_comparison(db: Session, user_id: int, name: str, analysis_ids: str, result: str | None = None):
+    """Karşılaştırma oluştur / Create comparison."""
+    from src.database.models import Comparison
+    c = Comparison(user_id=user_id, name=name, analysis_ids=analysis_ids, comparison_result=result)
+    db.add(c)
+    db.flush()
+    return c
+
+
+def get_user_comparisons(db: Session, user_id: int) -> list:
+    """Kullanıcı karşılaştırmalarını getir / Get user comparisons."""
+    from src.database.models import Comparison
+    return (
+        db.query(Comparison)
+        .filter(Comparison.user_id == user_id)
+        .order_by(Comparison.created_at.desc())
+        .all()
+    )
+
+
+def get_comparison_by_id(db: Session, comparison_id: int):
+    """ID ile karşılaştırma getir / Get comparison by ID."""
+    from src.database.models import Comparison
+    return db.query(Comparison).filter(Comparison.id == comparison_id).first()

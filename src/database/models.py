@@ -191,3 +191,105 @@ class AnalysisReport(Base):
             f"<AnalysisReport(id={self.id}, analysis_id={self.analysis_id}, "
             f"type='{self.report_type}')>"
         )
+
+
+# ============================================================
+# 5. CompanyProfile Modeli / Company Profile Model
+# ============================================================
+
+
+class CompanyProfile(Base):
+    """Firma profili / Company profile."""
+
+    __tablename__ = "company_profiles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    company_name = Column(String(255), nullable=True)
+    tax_number = Column(String(20), nullable=True)
+    city = Column(String(100), nullable=True)
+    address = Column(Text, nullable=True)
+    phone = Column(String(20), nullable=True)
+    website = Column(String(255), nullable=True)
+    sector = Column(String(100), nullable=True)
+    annual_revenue_try = Column(Float, nullable=True)
+    employee_count = Column(Integer, nullable=True)
+    established_year = Column(Integer, nullable=True)
+    certifications = Column(Text, nullable=True)       # JSON array
+    experience_areas = Column(Text, nullable=True)      # JSON array
+    equipment_list = Column(Text, nullable=True)        # JSON array
+    max_tender_value_try = Column(Float, nullable=True)
+    bank_credit_limit_try = Column(Float, nullable=True)
+    reference_projects = Column(Text, nullable=True)    # JSON array
+    created_at = Column(DateTime, default=_utcnow)
+    updated_at = Column(DateTime, default=_utcnow, onupdate=_utcnow)
+
+    user = relationship("User", backref="company_profile")
+
+    def __repr__(self) -> str:
+        return f"<CompanyProfile(user_id={self.user_id}, company='{self.company_name}')>"
+
+
+# ============================================================
+# 6. ChatMessage Modeli / Chat Message Model
+# ============================================================
+
+
+class ChatMessage(Base):
+    """Chatbot mesajı / Chat message."""
+
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    analysis_id = Column(Integer, ForeignKey("analyses.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    role = Column(String(20), nullable=False)  # "user" | "assistant"
+    message = Column(Text, nullable=False)
+    created_at = Column(DateTime, default=_utcnow)
+
+    def __repr__(self) -> str:
+        return f"<ChatMessage(id={self.id}, role='{self.role}')>"
+
+
+# ============================================================
+# 7. Notification Modeli / Notification Model
+# ============================================================
+
+
+class Notification(Base):
+    """Bildirim / Notification."""
+
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    message = Column(Text, nullable=True)
+    type = Column(String(50), default="info")  # info, warning, success, error
+    is_read = Column(Boolean, default=False)
+    link = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=_utcnow)
+
+    def __repr__(self) -> str:
+        return f"<Notification(id={self.id}, type='{self.type}', read={self.is_read})>"
+
+
+# ============================================================
+# 8. Comparison Modeli / Comparison Model
+# ============================================================
+
+
+class Comparison(Base):
+    """İhale karşılaştırması / Tender comparison."""
+
+    __tablename__ = "comparisons"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    name = Column(String(255), nullable=False)
+    analysis_ids = Column(Text, nullable=False)       # JSON array
+    comparison_result = Column(Text, nullable=True)   # JSON
+    created_at = Column(DateTime, default=_utcnow)
+
+    def __repr__(self) -> str:
+        return f"<Comparison(id={self.id}, name='{self.name}')>"
