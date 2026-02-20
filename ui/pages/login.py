@@ -1,62 +1,162 @@
 """
-TenderAI Giriş Sayfası / Login Page.
+TenderAI Giriş / Kayıt Sayfası / Login / Registration Page.
 
-Kullanıcı giriş ve kayıt arayüzü.
-User login and registration interface.
-
-Bu modül Modül 5'te implement edilecektir.
-This module will be implemented in Module 5.
+E-posta + şifre tabanlı kimlik doğrulama arayüzü.
+Email + password based authentication interface.
 """
 
 import streamlit as st
 
+from src.database.db import DatabaseManager
+from src.auth.auth import AuthManager
+
 
 def render_login_page() -> None:
-    """
-    Giriş sayfasını render et / Render login page.
+    """Giriş/Kayıt sayfasını render et / Render login/registration page."""
 
-    Kullanıcı giriş formu ve kayıt yönlendirmesi.
-    User login form and registration redirect.
+    # Ortalanmış düzen / Centered layout
+    col_left, col_center, col_right = st.columns([1, 2, 1])
 
-    Raises:
-        NotImplementedError: Modül 5'te implement edilecek
-    """
-    st.title("🔐 Giriş Yap")
-    st.markdown("---")
+    with col_center:
+        # Logo ve başlık / Logo and title
+        st.markdown(
+            """
+            <div style="text-align:center; padding: 2rem 0 1.5rem;">
+                <h1 style="font-size: 2.5rem; margin-bottom: 0.2rem;">📋 TenderAI</h1>
+                <p style="font-size: 1.1rem; opacity: 0.7; margin-top: 0;">
+                    İhale Şartname Analiz Platformu
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-    with st.form("login_form"):
-        username = st.text_input("Kullanıcı Adı", placeholder="kullanici@email.com")
-        password = st.text_input("Şifre", type="password", placeholder="••••••••")
-        submit = st.form_submit_button("Giriş Yap", use_container_width=True)
+        # Tab'lar / Tabs
+        tab_login, tab_register = st.tabs(["🔐 Giriş Yap", "📝 Kayıt Ol"])
 
-        if submit:
-            st.warning("⚠️ Giriş sistemi Modül 5'te implement edilecektir.")
+        # ── Giriş Tab'ı / Login Tab ──
 
-    st.markdown("---")
-    st.markdown("Hesabınız yok mu? **Kayıt olun**")
+        with tab_login:
+            with st.form("login_form", clear_on_submit=False):
+                st.markdown("#### Hesabınıza giriş yapın")
+
+                login_email = st.text_input(
+                    "E-posta", placeholder="ornek@firma.com", key="login_email"
+                )
+                login_password = st.text_input(
+                    "Şifre", type="password", placeholder="••••••••", key="login_password"
+                )
+                remember_me = st.checkbox("Beni hatırla", key="remember_me")
+
+                login_submitted = st.form_submit_button(
+                    "Giriş Yap", use_container_width=True, type="primary"
+                )
+
+            if login_submitted:
+                if not login_email or not login_password:
+                    st.error("E-posta ve şifre alanları zorunludur.")
+                    return
+
+                _handle_login(login_email, login_password)
+
+        # ── Kayıt Tab'ı / Register Tab ──
+
+        with tab_register:
+            with st.form("register_form", clear_on_submit=False):
+                st.markdown("#### Yeni hesap oluşturun")
+
+                reg_name = st.text_input(
+                    "Ad Soyad", placeholder="Ahmet Yılmaz", key="reg_name"
+                )
+                reg_email = st.text_input(
+                    "E-posta", placeholder="ornek@firma.com", key="reg_email"
+                )
+                reg_company = st.text_input(
+                    "Şirket Adı (Opsiyonel)", placeholder="ABC İnşaat Ltd.", key="reg_company"
+                )
+                reg_password = st.text_input(
+                    "Şifre", type="password", placeholder="En az 8 karakter", key="reg_password"
+                )
+                reg_password2 = st.text_input(
+                    "Şifre Tekrar", type="password", placeholder="Şifreyi tekrar girin", key="reg_password2"
+                )
+
+                reg_submitted = st.form_submit_button(
+                    "Kayıt Ol", use_container_width=True, type="primary"
+                )
+
+            if reg_submitted:
+                _handle_register(reg_name, reg_email, reg_company, reg_password, reg_password2)
+
+        # Alt bilgi / Footer
+        st.markdown(
+            """
+            <div style="text-align:center; padding-top: 2rem; opacity: 0.5; font-size: 0.85rem;">
+                TenderAI - Yapay Zeka Destekli İhale Şartname Analiz Platformu<br>
+                Tüm ihale dokümanlarınızı saniyeler içinde analiz edin.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
 
-def render_register_page() -> None:
-    """
-    Kayıt sayfasını render et / Render registration page.
+def _handle_login(email: str, password: str) -> None:
+    """Giriş işlemini yönet / Handle login."""
+    try:
+        db_manager = DatabaseManager()
+        db_manager.init_db()
 
-    Yeni kullanıcı kayıt formu.
-    New user registration form.
+        with db_manager.get_db() as db:
+            auth = AuthManager(db)
+            success, msg, user = auth.login(email, password)
 
-    Raises:
-        NotImplementedError: Modül 5'te implement edilecek
-    """
-    st.title("📝 Kayıt Ol")
-    st.markdown("---")
+            if success and user:
+                st.session_state["authenticated"] = True
+                st.session_state["user_id"] = user.id
+                st.session_state["user_email"] = user.email
+                st.session_state["user_name"] = user.full_name
+                st.session_state["user_plan"] = user.plan
+                st.session_state["analysis_count"] = user.analysis_count or 0
 
-    with st.form("register_form"):
-        full_name = st.text_input("Ad Soyad", placeholder="Ad Soyad")
-        email = st.text_input("E-posta", placeholder="kullanici@email.com")
-        company = st.text_input("Firma Adı", placeholder="Firma A.Ş.")
-        username = st.text_input("Kullanıcı Adı", placeholder="kullanici123")
-        password = st.text_input("Şifre", type="password", placeholder="••••••••")
-        password_confirm = st.text_input("Şifre Tekrar", type="password", placeholder="••••••••")
-        submit = st.form_submit_button("Kayıt Ol", use_container_width=True)
+                st.success(f"Hoş geldiniz, {user.full_name}! 🎉")
+                st.rerun()
+            else:
+                st.error(f"⚠️ {msg}")
 
-        if submit:
-            st.warning("⚠️ Kayıt sistemi Modül 5'te implement edilecektir.")
+    except Exception as e:
+        st.error(f"Giriş sırasında hata oluştu: {e}")
+
+
+def _handle_register(
+    name: str, email: str, company: str, password: str, password2: str
+) -> None:
+    """Kayıt işlemini yönet / Handle registration."""
+    try:
+        if not name or not email or not password:
+            st.error("Ad Soyad, E-posta ve Şifre alanları zorunludur.")
+            return
+
+        if password != password2:
+            st.error("Şifreler eşleşmiyor.")
+            return
+
+        db_manager = DatabaseManager()
+        db_manager.init_db()
+
+        with db_manager.get_db() as db:
+            auth = AuthManager(db)
+            success, msg, user = auth.register(
+                email=email,
+                password=password,
+                full_name=name,
+                company_name=company if company else None,
+            )
+
+            if success:
+                st.success("✅ Kayıt başarılı! Şimdi giriş yapabilirsiniz.")
+                st.balloons()
+            else:
+                st.error(f"⚠️ {msg}")
+
+    except Exception as e:
+        st.error(f"Kayıt sırasında hata oluştu: {e}")
