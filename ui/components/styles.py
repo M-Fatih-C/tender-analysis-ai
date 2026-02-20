@@ -1,373 +1,402 @@
 """
-TenderAI Profesyonel CSS Stilleri / Professional CSS Styles.
+TenderAI Premium CSS Sistemi / Premium CSS System v2.0.
 
-Tüm custom CSS bu dosyada yönetilir.
-All custom CSS is managed in this file.
+Glassmorphism, animasyonlar, dark tema, responsive.
 """
 
 import streamlit as st
 
 
 def inject_custom_css() -> None:
-    """Profesyonel CSS inject et / Inject professional CSS."""
+    """Premium CSS enjekte et."""
     st.markdown(_CSS, unsafe_allow_html=True)
 
 
-_CSS = """
-<style>
+_CSS = """<style>
 /* ============================================================
    GENEL / GENERAL
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 * { font-family: 'Inter', sans-serif; }
+html { scroll-behavior: smooth; }
 
-/* Streamlit branding gizle */
-#MainMenu, footer, header { visibility: hidden; }
-[data-testid="stSidebarNav"] { display: none !important; }
+/* Hide Streamlit branding */
+#MainMenu, header[data-testid="stHeader"], footer,
+div[data-testid="stToolbar"], .stDeployButton,
+div[data-testid="stSidebarNavItems"] { display: none !important; }
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #0E1117; }
-::-webkit-scrollbar-thumb { background: #667eea; border-radius: 3px; }
+.block-container { padding: 1rem 2rem 2rem 2rem; }
 
-/* fadeIn animasyonu */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
+/* ============================================================
+   SCROLLBAR
+   ============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d1117; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+
+/* ============================================================
+   ANIMATIONS
+   ============================================================ */
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideInLeft { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:translateX(0)} }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-4px)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-3px)} 75%{transform:translateX(3px)} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes gradientShift { 0%{background-position:0% 50%} 50%{background-position:100% 50%} 100%{background-position:0% 50%} }
 
 /* ============================================================
    SIDEBAR
    ============================================================ */
-[data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0f1724 0%, #141d2f 50%, #1a2540 100%) !important;
-    border-right: 1px solid rgba(102,126,234,0.15);
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3e 50%, #0f1b3d 100%);
+    width: 280px !important;
     min-width: 280px !important;
-    max-width: 280px !important;
+}
+section[data-testid="stSidebar"] .block-container { padding: 1rem 1rem; }
+
+.sidebar-logo {
+    text-align: center; padding: 1.5rem 0 0.5rem 0;
+    animation: fadeIn 0.6s ease;
+}
+.sidebar-logo .logo-icon { font-size: 2.5rem; }
+.sidebar-logo .logo-text {
+    font-size: 1.6rem; font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.sidebar-logo .logo-sub {
+    font-size: 0.7rem; color: #8892b0; margin-top: 2px;
+    letter-spacing: 1px; text-transform: uppercase;
 }
 
-[data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
-    padding-top: 1rem;
+/* User card */
+.user-card {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px; padding: 1rem; margin: 1rem 0;
+    animation: slideUp 0.5s ease;
+}
+.user-card .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-weight: 700; font-size: 1rem;
+    margin-right: 10px; vertical-align: middle;
+}
+.user-card .user-name { font-weight: 600; color: #f1f5f9; font-size: 0.95rem; }
+.user-card .user-company { font-size: 0.75rem; color: #8892b0; }
+.plan-badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; margin-top: 4px;
+}
+.plan-free { background: rgba(102,126,234,0.15); color: #667eea; }
+.plan-starter { background: rgba(243,156,18,0.15); color: #f39c12; }
+.plan-pro { background: rgba(155,89,182,0.15); color: #9b59b6; }
+
+.quota-bar {
+    height: 4px; background: #1a1a2e; border-radius: 2px; margin-top: 8px; overflow: hidden;
+}
+.quota-fill {
+    height: 100%; border-radius: 2px;
+    transition: width 0.8s ease;
 }
 
-/* Sidebar butonları */
-[data-testid="stSidebar"] .stButton > button {
-    width: 100%;
-    text-align: left;
-    padding: 0.6rem 1rem;
-    border-radius: 10px;
-    border: none;
-    font-size: 0.9rem;
-    font-weight: 500;
-    transition: all 0.2s ease;
-    margin-bottom: 4px;
+/* Nav buttons */
+section[data-testid="stSidebar"] button[kind="secondary"],
+section[data-testid="stSidebar"] button[kind="primary"] {
+    width: 100%; text-align: left !important; justify-content: flex-start !important;
+    border: none; border-radius: 8px; padding: 0.6rem 1rem;
+    font-size: 0.85rem; font-weight: 500;
+    transition: all 0.3s ease; margin-bottom: 2px;
 }
-
-[data-testid="stSidebar"] .stButton > button:hover {
+section[data-testid="stSidebar"] button[kind="secondary"] {
+    background: transparent; color: #8892b0;
+}
+section[data-testid="stSidebar"] button[kind="secondary"]:hover {
+    background: rgba(102,126,234,0.1); color: #f1f5f9;
     transform: translateX(4px);
 }
-
-[data-testid="stSidebar"] .stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #667eea, #764ba2) !important;
-    color: white !important;
-    box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+section[data-testid="stSidebar"] button[kind="primary"] {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border-left: 3px solid #f093fb;
 }
 
-[data-testid="stSidebar"] .stButton > button[kind="secondary"] {
-    background: rgba(255,255,255,0.04) !important;
-    color: #b0b8d1 !important;
+.sidebar-footer {
+    position: fixed; bottom: 0; width: 260px;
+    padding: 0.8rem 1rem; text-align: center;
+    font-size: 0.65rem; color: #555; border-top: 1px solid rgba(255,255,255,0.05);
+    background: #0a0a1a;
 }
 
 /* ============================================================
-   METRİK KARTLARI / METRIC CARDS
+   METRIC CARDS (glassmorphism)
    ============================================================ */
 .metric-card {
-    background: linear-gradient(135deg, rgba(30,35,50,0.9), rgba(20,25,40,0.9));
-    border: 1px solid rgba(102,126,234,0.15);
-    border-radius: 16px;
-    padding: 1.2rem 1.4rem;
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; padding: 1.2rem;
     text-align: center;
     transition: all 0.3s ease;
-    animation: fadeIn 0.5s ease;
+    animation: slideUp 0.5s ease;
 }
 .metric-card:hover {
-    transform: translateY(-4px);
+    transform: translateY(-3px);
     box-shadow: 0 8px 25px rgba(102,126,234,0.15);
-    border-color: rgba(102,126,234,0.4);
+    border-color: rgba(102,126,234,0.2);
 }
-.metric-card .metric-value {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0.3rem 0;
-}
-.metric-card .metric-label {
-    font-size: 0.8rem;
-    color: #8892b0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-.metric-card .metric-icon {
-    font-size: 1.5rem;
-    margin-bottom: 0.3rem;
-}
+.metric-icon { font-size: 1.8rem; margin-bottom: 6px; }
+.metric-value { font-size: 1.8rem; font-weight: 800; color: #f1f5f9; }
+.metric-label { font-size: 0.75rem; color: #8892b0; margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
 
 /* ============================================================
-   RİSK RENKLERİ / RISK COLORS
-   ============================================================ */
-.risk-low { color: #27ae60; }
-.risk-medium { color: #f39c12; }
-.risk-high { color: #e74c3c; }
-.risk-critical { color: #c0392b; }
-
-.risk-badge {
-    display: inline-block;
-    padding: 3px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-}
-.risk-badge-low { background: rgba(39,174,96,0.15); color: #27ae60; border: 1px solid rgba(39,174,96,0.3); }
-.risk-badge-medium { background: rgba(243,156,18,0.15); color: #f39c12; border: 1px solid rgba(243,156,18,0.3); }
-.risk-badge-high { background: rgba(231,76,60,0.15); color: #e74c3c; border: 1px solid rgba(231,76,60,0.3); }
-.risk-badge-critical { background: rgba(192,57,43,0.15); color: #c0392b; border: 1px solid rgba(192,57,43,0.3); }
-
-/* ============================================================
-   RİSK SKORU DAİRESİ / RISK SCORE CIRCLE
+   RISK SCORE CIRCLE
    ============================================================ */
 .risk-circle {
-    width: 140px;
-    height: 140px;
-    border-radius: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 0 auto;
-    border: 4px solid;
+    width: 160px; height: 160px; border-radius: 50%;
+    border: 6px solid; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; margin: 0 auto;
+    animation: fadeIn 0.8s ease;
+    position: relative;
 }
-.risk-circle .score { font-size: 2.8rem; font-weight: 700; }
-.risk-circle .label { font-size: 0.75rem; opacity: 0.8; }
+.risk-circle .score { font-size: 3rem; font-weight: 800; line-height: 1; }
+.risk-circle .label { font-size: 0.8rem; font-weight: 600; margin-top: 4px; text-transform: uppercase; letter-spacing: 1px; }
 
 /* ============================================================
-   TAVSİYE KARTLARI / ADVICE CARDS
+   ADVICE CARDS
    ============================================================ */
 .advice-card {
-    border-radius: 14px;
-    padding: 1.2rem;
-    text-align: center;
-    border: 2px solid;
-    animation: fadeIn 0.5s ease;
+    border-radius: 14px; padding: 1.5rem; text-align: center;
+    border: 2px solid; animation: slideUp 0.6s ease;
 }
-.advice-card .advice-icon { font-size: 2rem; }
-.advice-card .advice-title { font-size: 1.2rem; font-weight: 700; margin: 0.5rem 0; }
-.advice-card .advice-text { font-size: 0.85rem; opacity: 0.85; }
-
-.advice-gir {
-    border-color: #27ae60;
-    background: rgba(39,174,96,0.08);
-    color: #27ae60;
-}
-.advice-dikkatli {
-    border-color: #f39c12;
-    background: rgba(243,156,18,0.08);
-    color: #f39c12;
-}
-.advice-girme {
-    border-color: #e74c3c;
-    background: rgba(231,76,60,0.08);
-    color: #e74c3c;
-}
+.advice-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.advice-title { font-size: 1.4rem; font-weight: 800; }
+.advice-text { font-size: 0.85rem; color: #b0b8d1; margin-top: 6px; }
+.advice-gir { border-color: #27ae60; background: rgba(39,174,96,0.08); }
+.advice-gir .advice-title { color: #27ae60; }
+.advice-dikkatli { border-color: #f39c12; background: rgba(243,156,18,0.08); }
+.advice-dikkatli .advice-title { color: #f39c12; }
+.advice-girme { border-color: #e74c3c; background: rgba(231,76,60,0.08); animation: shake 0.5s ease; }
+.advice-girme .advice-title { color: #e74c3c; }
 
 /* ============================================================
-   ANALİZ KARTLARI / ANALYSIS CARDS
+   RISK BADGES
    ============================================================ */
-.analysis-card {
-    background: rgba(30,35,50,0.7);
-    border: 1px solid rgba(102,126,234,0.12);
-    border-radius: 12px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.6rem;
-    border-left: 4px solid;
-    transition: all 0.25s ease;
-    animation: fadeIn 0.4s ease;
+.risk-badge {
+    display: inline-block; padding: 3px 10px; border-radius: 12px;
+    font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
-.analysis-card:hover {
+.risk-badge-critical { background: rgba(192,57,43,0.2); color: #e74c3c; animation: pulse 2s infinite; }
+.risk-badge-high { background: rgba(231,76,60,0.15); color: #e67e22; }
+.risk-badge-medium { background: rgba(243,156,18,0.15); color: #f39c12; }
+.risk-badge-low { background: rgba(39,174,96,0.15); color: #27ae60; }
+
+/* ============================================================
+   ANALYSIS / RISK ITEM CARDS
+   ============================================================ */
+.analysis-card, .risk-item-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-left: 4px solid #555;
+    border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 10px;
+    transition: all 0.3s ease; animation: fadeIn 0.4s ease;
+}
+.analysis-card:hover, .risk-item-card:hover {
+    background: rgba(255,255,255,0.04);
     transform: translateX(4px);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-.analysis-card .card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.4rem;
-}
-.analysis-card .card-title { font-weight: 600; font-size: 0.95rem; }
-.analysis-card .card-date { font-size: 0.8rem; color: #8892b0; }
-.analysis-card .card-score { font-weight: 700; font-size: 1.1rem; }
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.card-title { font-weight: 600; color: #f1f5f9; font-size: 0.9rem; }
+.card-score { font-weight: 800; font-size: 1.2rem; }
+.card-date { font-size: 0.75rem; color: #8892b0; margin-top: 4px; }
 
 /* ============================================================
-   UPLOAD ALANI / UPLOAD AREA
+   TABLES
    ============================================================ */
-[data-testid="stFileUploader"] {
-    border: 2px dashed rgba(102,126,234,0.3) !important;
-    border-radius: 16px !important;
-    padding: 1rem !important;
+.styled-table { width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden; }
+.styled-table th {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; padding: 10px 14px; font-size: 0.8rem; font-weight: 600;
+    text-align: left; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.styled-table td {
+    padding: 10px 14px; font-size: 0.85rem; color: #c4c9d8;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.styled-table tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+.styled-table tr:hover { background: rgba(102,126,234,0.06); }
+
+/* ============================================================
+   UPLOAD AREA
+   ============================================================ */
+div[data-testid="stFileUploader"] {
+    border: 2px dashed rgba(102,126,234,0.3);
+    border-radius: 14px; padding: 1rem;
     transition: all 0.3s ease;
 }
-[data-testid="stFileUploader"]:hover {
-    border-color: rgba(102,126,234,0.6) !important;
-    background: rgba(102,126,234,0.03) !important;
+div[data-testid="stFileUploader"]:hover {
+    border-color: #667eea;
+    background: rgba(102,126,234,0.03);
 }
 
 /* ============================================================
-   TABLOLAR / TABLES
+   CHATBOT
    ============================================================ */
-.styled-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    border-radius: 12px;
-    overflow: hidden;
-    animation: fadeIn 0.5s ease;
+.chat-msg {
+    padding: 0.8rem 1rem; border-radius: 14px; margin-bottom: 10px;
+    max-width: 85%; animation: fadeIn 0.3s ease; font-size: 0.9rem;
+    line-height: 1.5;
 }
-.styled-table thead th {
+.chat-user {
     background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 0.8rem 1rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-align: left;
+    color: #fff; margin-left: auto; border-bottom-right-radius: 4px;
 }
-.styled-table tbody tr { transition: background 0.2s; }
-.styled-table tbody tr:hover { background: rgba(102,126,234,0.08); }
-.styled-table tbody td {
-    padding: 0.7rem 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-size: 0.85rem;
+.chat-ai {
+    background: rgba(255,255,255,0.05); color: #e2e8f0;
+    border-bottom-left-radius: 4px;
 }
-.styled-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+.chat-time { font-size: 0.65rem; color: #666; margin-top: 4px; }
+.chat-ref { font-size: 0.75rem; color: #667eea; margin-top: 4px; }
 
-/* ============================================================
-   KULLANICI KARTI / USER INFO CARD
-   ============================================================ */
-.user-card {
-    background: rgba(255,255,255,0.04);
-    border-radius: 12px;
-    padding: 0.8rem 1rem;
-    border: 1px solid rgba(102,126,234,0.12);
-    margin-bottom: 0.8rem;
-}
-.user-card .user-name { font-weight: 600; font-size: 0.95rem; }
-.user-card .user-plan { font-size: 0.8rem; color: #667eea; }
-.user-card .user-quota { font-size: 0.75rem; color: #8892b0; margin-top: 0.4rem; }
-
-/* ============================================================
-   GENEL BUTONLAR / GENERAL BUTTONS
-   ============================================================ */
-.stButton > button {
-    border-radius: 10px;
-    font-weight: 600;
+.chip {
+    display: inline-block; padding: 6px 14px; border-radius: 20px;
+    background: rgba(102,126,234,0.1); color: #667eea;
+    font-size: 0.78rem; margin: 3px; cursor: pointer;
+    border: 1px solid rgba(102,126,234,0.2);
     transition: all 0.2s ease;
 }
-.stButton > button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102,126,234,0.25);
-}
-
-/* ============================================================
-   PLAN KARTLARI / PLAN CARDS
-   ============================================================ */
-.plan-card {
-    border: 2px solid rgba(128,128,128,0.2);
-    border-radius: 16px;
-    padding: 1.5rem;
-    text-align: center;
-    min-height: 380px;
-    transition: all 0.3s ease;
-    position: relative;
-    background: rgba(30,35,50,0.6);
-}
-.plan-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-}
-.plan-card.highlighted {
-    border-color: #667eea;
-    background: rgba(102,126,234,0.05);
-}
-.plan-card .plan-badge {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 3px 14px;
-    border-radius: 20px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    display: inline-block;
-    margin-bottom: 0.5rem;
-}
-.plan-card .plan-name { font-size: 1.2rem; font-weight: 600; }
-.plan-card .plan-price { font-size: 2rem; font-weight: 700; margin: 0.5rem 0; }
-.plan-card .plan-period { font-size: 0.85rem; color: #8892b0; }
-.plan-card .plan-features { text-align: left; padding: 0.5rem 0; }
-.plan-card .plan-features li { padding: 0.2rem 0; font-size: 0.85rem; list-style: none; }
-
-/* ============================================================
-   LOGIN SAYFASI / LOGIN PAGE
-   ============================================================ */
-.login-container {
-    max-width: 440px;
-    margin: 0 auto;
-    padding-top: 2rem;
-}
-.login-logo {
-    text-align: center;
-    margin-bottom: 1.5rem;
-}
-.login-logo h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-.login-logo p { color: #8892b0; font-size: 0.9rem; }
-
-/* ============================================================
-   RİSK ANALİZ KART / RISK ITEM CARD
-   ============================================================ */
-.risk-item-card {
-    background: rgba(30,35,50,0.7);
-    border-radius: 12px;
-    padding: 1rem 1.2rem;
-    margin-bottom: 0.8rem;
-    border-left: 4px solid;
-    animation: fadeIn 0.4s ease;
-}
+.chip:hover { background: rgba(102,126,234,0.2); transform: scale(1.03); }
 
 /* ============================================================
    GRADIENT DIVIDER
    ============================================================ */
 .gradient-divider {
-    height: 2px;
+    height: 2px; border-radius: 1px; margin: 1rem 0;
     background: linear-gradient(90deg, #667eea, #764ba2, transparent);
-    border: none;
-    margin: 0.8rem 0 1.2rem 0;
 }
 
-/* Tab stili */
-.stTabs [data-baseweb="tab-list"] {
-    gap: 4px;
+/* ============================================================
+   LOGIN PAGE
+   ============================================================ */
+.login-container {
+    max-width: 440px; margin: 0 auto; padding: 2rem 0;
+    animation: fadeIn 0.7s ease;
 }
-.stTabs [data-baseweb="tab"] {
-    border-radius: 8px 8px 0 0;
-    padding: 8px 16px;
+.login-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 2.5rem 2rem;
+}
+.login-logo {
+    text-align: center; margin-bottom: 1.5rem;
+}
+.login-logo .icon { font-size: 3rem; }
+.login-logo .title {
+    font-size: 2rem; font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.login-logo .subtitle { font-size: 0.8rem; color: #8892b0; margin-top: 4px; }
+
+.strength-bar { height: 4px; border-radius: 2px; background: #1a1a2e; margin-top: 4px; }
+.strength-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+
+/* ============================================================
+   NOTIFICATION BADGE
+   ============================================================ */
+.notif-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    background: #e74c3c; color: #fff; font-size: 0.6rem; font-weight: 700;
+    width: 18px; height: 18px; border-radius: 50%;
+    position: relative; top: -8px; left: -4px;
+    animation: pulse 2s infinite;
 }
 
-/* Progress bar */
-.stProgress > div > div {
+/* ============================================================
+   COMPARISON TABLE
+   ============================================================ */
+.comparison-best {
+    border: 2px solid #27ae60 !important;
+    background: rgba(39,174,96,0.05) !important;
+    box-shadow: 0 0 20px rgba(39,174,96,0.1);
+}
+
+/* ============================================================
+   PROFILE FORM
+   ============================================================ */
+.form-section {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem;
+}
+.form-section-title {
+    font-size: 0.9rem; font-weight: 700; color: #667eea;
+    margin-bottom: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   ONBOARDING
+   ============================================================ */
+.onboarding-card {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px; padding: 2rem;
+    text-align: center; animation: slideUp 0.6s ease;
+}
+.onboarding-step {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    font-weight: 700; font-size: 0.85rem; margin: 0 4px;
+}
+.step-active { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.step-inactive { background: rgba(255,255,255,0.05); color: #555; }
+.step-done { background: #27ae60; color: #fff; }
+
+/* ============================================================
+   PROGRESS BAR
+   ============================================================ */
+div[data-testid="stProgress"] > div > div {
     background: linear-gradient(90deg, #667eea, #764ba2) !important;
+    border-radius: 4px;
 }
-</style>
-"""
+
+/* ============================================================
+   QUICK ACTION CARDS
+   ============================================================ */
+.action-card {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; padding: 1.5rem; text-align: center;
+    transition: all 0.3s ease; cursor: pointer;
+}
+.action-card:hover {
+    background: rgba(102,126,234,0.06);
+    border-color: rgba(102,126,234,0.2);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(102,126,234,0.1);
+}
+.action-icon { font-size: 2rem; margin-bottom: 8px; }
+.action-title { font-weight: 600; color: #f1f5f9; font-size: 0.9rem; }
+.action-desc { font-size: 0.75rem; color: #8892b0; margin-top: 4px; }
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+    .block-container { padding: 0.5rem 1rem; }
+    .metric-card { padding: 0.8rem; }
+    .metric-value { font-size: 1.3rem; }
+    .risk-circle { width: 120px; height: 120px; }
+    .risk-circle .score { font-size: 2rem; }
+}
+</style>"""
