@@ -1,179 +1,140 @@
-# 📋 TenderAI — Yapay Zeka Destekli İhale Şartname Analiz Platformu
+# 📋 TenderAI v2.0.0
 
-<div align="center">
+**Yapay Zeka ile İhale Şartname Analiz Platformu**
 
-**İhale şartnamelerini yapay zeka ile saniyeler içinde analiz edin.**
+AI-powered tender specification analysis platform for Turkish public procurement.
 
-![Python](https://img.shields.io/badge/Python-3.12+-blue)
-![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red)
-![License](https://img.shields.io/badge/License-MIT-green)
-![Tests](https://img.shields.io/badge/tests-230+-brightgreen)
-
-</div>
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.40+-red)
+![Tests](https://img.shields.io/badge/Tests-234%20passed-green)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ---
 
-## 🚀 Ne Yapıyor?
+## 🎯 Özellikler
 
-TenderAI, ihale şartname PDF dosyalarını yapay zeka ile analiz ederek:
+| Özellik | Açıklama |
+|---------|----------|
+| 🔍 **AI Analiz** | OpenAI + Gemini destekli 6 adımlı risk analizi |
+| 📚 **Batch Analiz** | 10 dosyaya kadar toplu PDF analizi |
+| 💬 **Chatbot** | Şartnameye RAG tabanlı soru-cevap |
+| ⚖️ **Karşılaştırma** | Birden fazla ihaleyi yan yana inceleme |
+| 🏢 **Firma Profili** | Uygunluk skoru hesaplama |
+| 📊 **Dashboard** | Gauge, trend, donut, aktivite grafikleri |
+| 📥 **Rapor** | PDF ve Excel çıktı |
+| 🔔 **Bildirimler** | In-app bildirim sistemi |
 
-- ⚠️ **Risk Analizi** — Mali, teknik, hukuki ve süre risklerini tespit eder
-- 📋 **Belge Kontrolü** — Gerekli belgelerin listesini çıkarır
-- 💰 **Ceza Taraması** — Ceza maddelerini ve oranlarını bulur
-- 💵 **Mali Özet** — Teminat ve ödeme koşullarını özetler
-- ⏱️ **Süre Analizi** — Milestoneları ve gecikme risklerini değerlendirir
-- 📊 **Yönetici Özeti** — GİR / DİKKATLİ GİR / GİRME tavsiyesi verir
+---
 
-## 🏗️ Mimari
+## 🚀 Hızlı Başlangıç
 
-```
-PDF → Parser → AI Engine (RAG + GPT-4o) → Sonuçlar → PDF Rapor
-                    ↕                          ↕
-               FAISS Vector Store         SQLite DB
-```
-
-## ⚡ Hızlı Başlangıç
-
-### 1. Klonla
-
+### Seçenek 1: Docker (Önerilen)
 ```bash
+# Klonla
 git clone https://github.com/M-Fatih-C/tender-analysis-ai.git
 cd tender-analysis-ai
+
+# .env oluştur
+cp .env.example .env
+# API key'leri düzenle
+
+# Başlat
+docker compose up -d
+
+# Aç: http://localhost:8501
 ```
 
-### 2. Kur & Başlat
-
+### Seçenek 2: Manuel
 ```bash
+# Klonla
+git clone https://github.com/M-Fatih-C/tender-analysis-ai.git
+cd tender-analysis-ai
+
+# Script ile başlat
 chmod +x run.sh
 ./run.sh
+
+# Veya demo modda
+./run.sh --demo
 ```
 
-Veya manuel:
-
+### Seçenek 3: Adım Adım
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# .env dosyasına OPENAI_API_KEY girin
-streamlit run ui/app.py
+# .env'i düzenle
+streamlit run app.py
 ```
 
-### 3. Demo Modu (API key gerekmez)
+---
 
-```bash
-./run.sh --demo
-```
+## ⚙️ Ortam Değişkenleri
 
-## 🐳 Docker
+| Değişken | Zorunlu | Açıklama |
+|----------|:-------:|----------|
+| `OPENAI_API_KEY` | ⚠️ | OpenAI API key (GPT-4o-mini) |
+| `GEMINI_API_KEY` | ⚠️ | Google Gemini API key (fallback) |
+| `SECRET_KEY` | ✅ | JWT/Session güvenlik anahtarı |
+| `DEMO_MODE` | ❌ | `true` = API key'siz demo mod |
+| `DATABASE_URL` | ❌ | SQLite/PostgreSQL URL |
 
-```bash
-cp .env.example .env
-# .env'deki OPENAI_API_KEY'i düzenleyin
-docker-compose up --build
-```
+> En az bir API key gerekli. İkisi de yoksa `--demo` modunu kullanın.
 
-Tarayıcıda: `http://localhost:8501`
+---
 
-## 🔑 OpenAI API Key Alma
-
-1. [platform.openai.com](https://platform.openai.com) adresine gidin
-2. Hesap oluşturun / giriş yapın
-3. **API Keys** → **Create new secret key**
-4. Anahtarı `.env` dosyasına `OPENAI_API_KEY=sk-...` olarak yapıştırın
-
-## 📁 Proje Yapısı
+## 📐 Proje Yapısı
 
 ```
 tender-analysis-ai/
-├── ui/                     # Streamlit arayüz
-│   ├── app.py              # Ana uygulama
-│   ├── components/         # Sidebar bileşeni
-│   └── pages/              # Login, Dashboard, Analiz, Geçmiş, Ödeme
+├── app.py                    # Ana giriş noktası
+├── config/                   # Ayarlar, demo data
 ├── src/
-│   ├── pdf_parser/         # PDF metin çıkarma
-│   ├── ai_engine/          # RAG pipeline (GPT-4o + FAISS)
-│   ├── database/           # SQLAlchemy modeller + CRUD
-│   ├── auth/               # Kayıt, giriş, session yönetimi
-│   ├── report/             # PDF rapor üretici
-│   ├── payment/            # Plan & ödeme yönetimi
-│   └── utils/              # Yardımcı fonksiyonlar
-├── config/                 # Ayarlar, logging, demo verisi
-├── tests/                  # 230+ pytest testi
-├── assets/fonts/           # DejaVuSans (Türkçe PDF desteği)
-├── Dockerfile
-├── docker-compose.yml
-├── run.sh
-└── requirements.txt
+│   ├── ai_engine/            # OpenAI, Gemini, chatbot, matcher, comparator
+│   ├── auth/                 # Kimlik doğrulama
+│   ├── database/             # SQLAlchemy modeller + CRUD
+│   ├── pdf_parser/           # PDF metin çıkarma
+│   ├── report/               # PDF + Excel rapor üretimi
+│   └── utils/                # Yardımcı fonksiyonlar
+├── ui/
+│   ├── components/           # Header, sidebar, styles, onboarding
+│   └── views/                # 8 sayfa (login, dashboard, analiz, vb.)
+├── tests/                    # 234 test
+├── Dockerfile                # Multi-stage production build
+├── docker-compose.yml        # Production stack + nginx
+└── .github/workflows/ci.yml  # GitHub Actions CI/CD
 ```
+
+---
 
 ## 🧪 Test
 
 ```bash
-source venv/bin/activate
-pytest tests/ -v
+# Tüm testleri çalıştır
+python -m pytest tests/ -v
+
+# Coverage ile
+python -m pytest tests/ --cov=src --cov-report=html
 ```
-
-Test kapsamı:
-| Modül | Test Sayısı |
-|-------|-------------|
-| PDF Parser | 37 |
-| AI Engine | 35 |
-| Database | 46 |
-| Auth | 35 |
-| Report | 15 |
-| Payment | 27 |
-| Helpers | 29 |
-| Integration | 8 |
-| **Toplam** | **230+** |
-
-## 💳 Planlar
-
-| Plan | Fiyat | Analiz/Ay |
-|------|-------|-----------|
-| 🆓 Ücretsiz | 0 ₺ | 3 |
-| ⭐ Başlangıç | 5.000 ₺ | 20 |
-| 💎 Profesyonel | 15.000 ₺ | Sınırsız |
-
-## ⚠️ Bilinen Sınırlamalar
-
-- Taranmış (görsek) PDF'ler desteklenmez (OCR planlanıyor)
-- Şifreli PDF'ler açılamaz
-- Ödeme entegrasyonu henüz aktif değil (MVP)
-- Tek dil: Türkçe
-
-## 🗺️ Yol Haritası
-
-- [ ] OCR desteği (Tesseract)
-- [ ] iyzico / PayTR ödeme entegrasyonu
-- [ ] API endpoint'leri (FastAPI)
-- [ ] Çoklu dil desteği
-- [ ] Alembic database migration
-- [ ] Bulk analiz (birden fazla PDF)
-- [ ] Karşılaştırmalı analiz
-
-## 🛡️ Güvenlik
-
-- bcrypt şifre hashleme
-- SQLAlchemy ORM (SQL injection koruması)
-- API key'ler `.env`'de (`.gitignore`'da)
-- Dosya boyutu ve format kontrolü
-- Rate limiting (5 deneme / 5 dk)
-
-## 📄 Lisans
-
-MIT License — detaylar için [LICENSE](LICENSE) dosyasına bakın.
-
-## 🤝 Katkıda Bulunma
-
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Değişiklikleri commit edin (`git commit -m 'feat: add amazing feature'`)
-4. Push edin (`git push origin feature/amazing-feature`)
-5. Pull Request açın
 
 ---
 
-<div align="center">
-<b>TenderAI</b> — Yapay Zeka ile İhale Analizi 📋
-</div>
+## 🐳 Production Deployment
+
+```bash
+# Sadece web app
+docker compose up -d
+
+# Nginx reverse proxy ile
+docker compose --profile production up -d
+
+# Logları izle
+docker compose logs -f tenderai
+```
+
+---
+
+## 📄 Lisans
+
+MIT License — © 2025 TenderAI
