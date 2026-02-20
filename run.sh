@@ -56,7 +56,7 @@ mkdir -p logs data/uploads data/reports
 
 # 6. DB initialize
 echo -e "${GREEN}🗄️  Veritabanı başlatılıyor...${NC}"
-python3 -c "from src.database.db import DatabaseManager; DatabaseManager().init_db()"
+python3 -c "from src.database.db import DatabaseManager; DatabaseManager().init_db(); print('✅ Database hazır')"
 
 # 7. Streamlit başlat / Start Streamlit
 echo ""
@@ -64,6 +64,6 @@ echo -e "${GREEN}🚀 TenderAI başlatılıyor...${NC}"
 echo -e "   URL: ${YELLOW}http://localhost:8501${NC}"
 echo ""
 
-streamlit run ui/app.py \
+streamlit run app.py \
     --server.port=8501 \
     --browser.gatherUsageStats=false

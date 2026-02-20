@@ -1,104 +1,81 @@
 """
-TenderAI Sidebar Bileşeni / Sidebar Component.
-
-Navigasyon menüsü, kullanıcı bilgisi ve plan gösterimi.
-Navigation menu, user info, and plan display.
+TenderAI Profesyonel Sidebar / Professional Sidebar Component.
 """
 
 import streamlit as st
 
 
-# Plan limitleri / Plan limits
-_PLAN_LABELS = {
-    "free": "🆓 Ücretsiz",
-    "starter": "⭐ Başlangıç",
-    "pro": "💎 Profesyonel",
-    "enterprise": "🏢 Kurumsal",
-}
-
-_PLAN_LIMITS = {
-    "free": 3,
-    "starter": 20,
-    "pro": 999,
-    "enterprise": 999,
-}
+_NAV_ITEMS = [
+    ("📊", "Dashboard", "dashboard"),
+    ("🔍", "Yeni Analiz", "analysis"),
+    ("📁", "Geçmiş Analizler", "history"),
+    ("💳", "Plan & Ödeme", "payment"),
+]
 
 
 def render_sidebar() -> str:
     """
-    Sidebar'ı render et / Render sidebar.
-
-    Returns:
-        Seçilen sayfa adı / Selected page name
+    Profesyonel sidebar render et, aktif sayfa adını döndür.
+    Render professional sidebar, return active page name.
     """
     with st.sidebar:
-        # Logo ve başlık / Logo and title
+        # Logo
         st.markdown(
-            """
-            <div style="text-align:center; padding: 0.5rem 0 1rem;">
-                <h1 style="margin:0; font-size:1.8rem;">📋 TenderAI</h1>
-                <p style="margin:0; font-size:0.85rem; opacity:0.7;">
-                    İhale Şartname Analiz Platformu
-                </p>
-            </div>
-            """,
+            '<div class="login-logo">'
+            '<h1 style="font-size:1.8rem;margin:0;">📋 TenderAI</h1>'
+            '<p style="margin:0;">İhale Analiz Platformu</p>'
+            '</div>',
             unsafe_allow_html=True,
         )
 
-        st.divider()
-
-        # Kullanıcı bilgileri / User info
+        # Kullanıcı bilgi kartı
         user_name = st.session_state.get("user_name", "Kullanıcı")
-        user_plan = st.session_state.get("user_plan", "free")
-        plan_label = _PLAN_LABELS.get(user_plan, "🆓 Ücretsiz")
+        plan = st.session_state.get("user_plan", "free")
+        plan_names = {"free": "🆓 Ücretsiz", "starter": "⭐ Başlangıç", "pro": "💎 Pro"}
+        plan_limits = {"free": 3, "starter": 20, "pro": 9999}
+        count = st.session_state.get("analysis_count", 0)
+        limit = plan_limits.get(plan, 3)
+        remaining = max(0, limit - count) if limit < 9999 else 9999
 
-        st.markdown(f"**👤 {user_name}**")
-        st.caption(f"Plan: {plan_label}")
-
-        # Kalan analiz hakkı / Remaining analysis quota
-        analysis_count = st.session_state.get("analysis_count", 0)
-        max_analysis = _PLAN_LIMITS.get(user_plan, 3)
-
-        if max_analysis < 999:
-            remaining = max(0, max_analysis - analysis_count)
-            st.progress(
-                min(1.0, analysis_count / max_analysis) if max_analysis > 0 else 0,
-                text=f"Kalan hak: {remaining}/{max_analysis}",
-            )
-        else:
-            st.caption("♾️ Sınırsız analiz hakkı")
-
-        st.divider()
-
-        # Navigasyon menüsü / Navigation menu
-        selected = st.radio(
-            "Navigasyon",
-            options=[
-                "📊 Dashboard",
-                "🔍 Yeni Analiz",
-                "📁 Geçmiş Analizler",
-                "💳 Plan & Ödeme",
-            ],
-            label_visibility="collapsed",
+        st.markdown(
+            f'<div class="user-card">'
+            f'<div class="user-name">👤 {user_name}</div>'
+            f'<div class="user-plan">{plan_names.get(plan, plan)}</div>'
+            f'<div class="user-quota">Kalan: {"♾️ Sınırsız" if remaining >= 9999 else f"{remaining}/{limit}"}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
         )
 
-        st.divider()
+        if remaining < 9999:
+            st.progress(min(1.0, count / max(limit, 1)))
 
-        # Çıkış butonu / Logout button
-        if st.button("🚪 Çıkış Yap", use_container_width=True):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
+        st.markdown("---")
+
+        # Navigasyon
+        current = st.session_state.get("current_page", "dashboard")
+
+        for icon, label, key in _NAV_ITEMS:
+            btn_type = "primary" if current == key else "secondary"
+            if st.button(f"{icon}  {label}", key=f"nav_{key}", type=btn_type, use_container_width=True):
+                st.session_state["current_page"] = key
+                # Analiz sayfasına dönünce upload durumuna resetle
+                if key == "analysis":
+                    st.session_state["analysis_state"] = "upload"
+                st.rerun()
+
+        st.markdown("---")
+
+        # Çıkış
+        if st.button("🚪  Çıkış Yap", key="logout_btn", use_container_width=True):
+            for k in list(st.session_state.keys()):
+                del st.session_state[k]
             st.rerun()
 
-        # Versiyon bilgisi / Version info
+        # Footer
         st.markdown(
-            """
-            <div style="text-align:center; padding-top:2rem; opacity:0.4; font-size:0.75rem;">
-                TenderAI v1.0.0<br>
-                © 2025 Tüm hakları saklıdır
-            </div>
-            """,
+            "<div style='text-align:center;font-size:0.7rem;color:#555;margin-top:1rem;'>"
+            "TenderAI v1.0.0<br>© 2025</div>",
             unsafe_allow_html=True,
         )
 
-    return selected
+    return st.session_state.get("current_page", "dashboard")
