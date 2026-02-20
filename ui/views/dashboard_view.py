@@ -107,6 +107,11 @@ def render_dashboard() -> None:
 
     st.markdown("<br>", unsafe_allow_html=True)
 
+    # ── BÖLÜM 3.5: Uygunluk Skoru ──
+    _render_match_score_section(analyses, user_id)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
     # ── BÖLÜM 4: Son Analizler tablosu ──
     st.markdown("#### 📋 Son Analizler")
     _render_analysis_table(analyses[:8])
@@ -193,6 +198,133 @@ def _render_empty_state():
         st.session_state["current_page"] = "analysis"
         st.session_state["analysis_state"] = "upload"
         st.rerun()
+
+
+def _render_match_score_section(analyses: list, user_id: int) -> None:
+    """Uygunluk skoru bölümü — firma profili + en son analiz."""
+    st.markdown("#### 🏢 İhale Uygunluk Skoru")
+
+    # Firma profili yükle
+    profile_data = None
+    try:
+        from src.database.db import DatabaseManager, get_company_profile
+        db_mgr = DatabaseManager()
+        with db_mgr.get_db() as db:
+            profile_obj = get_company_profile(db, user_id)
+            if profile_obj:
+                profile_data = {
+                    "company_name": profile_obj.company_name,
+                    "annual_revenue_try": profile_obj.annual_revenue_try,
+                    "bank_credit_limit_try": profile_obj.bank_credit_limit_try,
+                    "employee_count": profile_obj.employee_count,
+                    "established_year": profile_obj.established_year,
+                    "certifications": profile_obj.certifications,
+                    "experience_areas": profile_obj.experience_areas,
+                    "reference_projects": profile_obj.reference_projects,
+                    "equipment_list": profile_obj.equipment_list,
+                }
+    except Exception:
+        pass
+
+    if not profile_data:
+        st.markdown(
+            '<div class="action-card" style="border:1px dashed rgba(243,156,18,0.3);">'
+            '<div class="action-icon">🏢</div>'
+            '<div class="action-title">Firma Profilinizi Doldurun</div>'
+            '<div class="action-desc">Uygunluk skoru hesaplanması için firma bilgileriniz gerekli</div>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+        if st.button("🏢 Profili Doldurun", use_container_width=True):
+            st.session_state["current_page"] = "company_profile"
+            st.rerun()
+        return
+
+    # En son analiz ile eşleştir
+    completed = [a for a in analyses if a.get("result") and a["risk_score"] is not None]
+    if not completed:
+        st.caption("Uygunluk skoru için en az 1 tamamlanmış analiz gerekli.")
+        return
+
+    latest = completed[0]
+    result = latest.get("result", {})
+
+    try:
+        from src.ai_engine.matcher import IhaleUygunlukMatcher
+        matcher = IhaleUygunlukMatcher()
+        match_result = matcher.calculate_match_score(profile_data, result)
+    except Exception:
+        st.caption("Uygunluk skoru hesaplanamadı.")
+        return
+
+    overall = match_result.get("overall_score", 0)
+    verdict = match_result.get("verdict", "—")
+    cats = match_result.get("category_scores", {})
+    strengths = match_result.get("strengths", [])
+    weaknesses = match_result.get("weaknesses", [])
+    recs = match_result.get("recommendations", [])
+
+    # Renk
+    if overall >= 75:
+        v_color, v_bg = "#27ae60", "rgba(39,174,96,0.08)"
+    elif overall >= 50:
+        v_color, v_bg = "#f39c12", "rgba(243,156,18,0.08)"
+    else:
+        v_color, v_bg = "#e74c3c", "rgba(231,76,60,0.08)"
+
+    match_col, details_col = st.columns([1, 1])
+
+    with match_col:
+        # Radar chart
+        cat_labels = ["Mali", "Teknik", "Referans", "Ekipman", "Genel"]
+        cat_values = [
+            cats.get("mali_yeterlilik", 0),
+            cats.get("teknik_yeterlilik", 0),
+            cats.get("referans_uyumu", 0),
+            cats.get("ekipman", 0),
+            cats.get("genel", 0),
+        ]
+
+        fig = go.Figure(data=go.Scatterpolar(
+            r=cat_values + [cat_values[0]],  # close the polygon
+            theta=cat_labels + [cat_labels[0]],
+            fill="toself",
+            fillcolor="rgba(102,126,234,0.15)",
+            line=dict(color="#667eea", width=2),
+            marker=dict(size=6, color="#667eea"),
+        ))
+        fig.update_layout(
+            polar=dict(
+                radialaxis=dict(range=[0, 100], showticklabels=False, showline=False, gridcolor="rgba(255,255,255,0.06)"),
+                angularaxis=dict(showline=False, gridcolor="rgba(255,255,255,0.06)", tickfont=dict(size=11, color="#FAFAFA")),
+                bgcolor="rgba(0,0,0,0)",
+            ),
+            height=260, showlegend=False,
+            **_PLOTLY_LAYOUT,
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+    with details_col:
+        # Verdict kartı
+        st.markdown(
+            f'<div style="background:{v_bg};border:2px solid {v_color};border-radius:14px;padding:1.5rem;text-align:center;">'
+            f'<div style="font-size:2.5rem;font-weight:800;color:{v_color};">{overall}</div>'
+            f'<div style="font-size:1rem;font-weight:700;color:{v_color};margin-top:4px;">{verdict}</div>'
+            f'<div style="font-size:0.75rem;color:#8892b0;margin-top:6px;">Dosya: {(latest["file_name"] or "—")[:25]}</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
+        # Güçlü/zayıf yanlar
+        if strengths:
+            for s in strengths[:3]:
+                st.markdown(f'<div style="font-size:0.8rem;color:#27ae60;margin:3px 0;">✅ {s}</div>', unsafe_allow_html=True)
+        if weaknesses:
+            for w in weaknesses[:3]:
+                st.markdown(f'<div style="font-size:0.8rem;color:#e74c3c;margin:3px 0;">⚠️ {w}</div>', unsafe_allow_html=True)
+        if recs:
+            for r in recs[:2]:
+                st.markdown(f'<div style="font-size:0.75rem;color:#8892b0;margin:3px 0;">💡 {r}</div>', unsafe_allow_html=True)
 
 
 # ==============================================================

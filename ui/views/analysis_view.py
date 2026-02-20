@@ -626,29 +626,37 @@ def _stage_results() -> None:
     st.markdown('<div class="gradient-divider"></div>', unsafe_allow_html=True)
 
     # ── Aksiyon Butonları ──
-    b1, b2, b3, b4 = st.columns(4)
+    b1, b2, b3, b4, b5 = st.columns(5)
     with b1:
         try:
             from src.report.generator import ReportGenerator
             gen = ReportGenerator()
             pdf_bytes = gen.generate(r, file_name or "rapor")
-            st.download_button("📥 PDF İndir", data=pdf_bytes, file_name=f"TenderAI_{file_name}.pdf", mime="application/pdf")
+            st.download_button("📥 PDF", data=pdf_bytes, file_name=f"TenderAI_{file_name}.pdf", mime="application/pdf")
         except Exception:
-            st.button("📥 PDF İndir", disabled=True)
+            st.button("📥 PDF", disabled=True)
     with b2:
         try:
             from src.report.excel_exporter import ExcelExporter
             exp = ExcelExporter()
             xlsx = exp.export(r, file_name or "rapor")
-            st.download_button("📊 Excel İndir", data=xlsx, file_name=f"TenderAI_{file_name}.xlsx",
+            st.download_button("📊 Excel", data=xlsx, file_name=f"TenderAI_{file_name}.xlsx",
                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         except Exception:
-            st.button("📊 Excel İndir", disabled=True)
+            st.button("📊 Excel", disabled=True)
     with b3:
+        try:
+            from src.report.docx_exporter import generate_docx_report
+            docx_bytes = generate_docx_report(r, file_name or "rapor")
+            st.download_button("📝 Word", data=docx_bytes, file_name=f"TenderAI_{file_name}.docx",
+                              mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document")
+        except Exception:
+            st.button("📝 Word", disabled=True)
+    with b4:
         if st.button("💬 Şartnameye Sor"):
             st.session_state["current_page"] = "chatbot"
             st.rerun()
-    with b4:
+    with b5:
         if st.button("🔄 Yeni Analiz"):
             st.session_state["analysis_state"] = "upload"
             st.rerun()

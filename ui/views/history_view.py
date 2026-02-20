@@ -132,7 +132,7 @@ def render_history() -> None:
                     st.info(a["executive_summary"][:200])
 
                 # Aksiyon butonları
-                bc1, bc2, bc3 = st.columns(3)
+                bc1, bc2, bc3, bc4 = st.columns(4)
                 with bc1:
                     if a["result_json"]:
                         try:
@@ -158,6 +158,17 @@ def render_history() -> None:
                         except Exception:
                             pass
                 with bc3:
+                    if a["result_json"]:
+                        try:
+                            from src.report.docx_exporter import generate_docx_report
+                            result_data = safe_json_parse(a["result_json"])
+                            docx_bytes = generate_docx_report(result_data, a["file_name"] or "rapor")
+                            st.download_button("📝 Word", data=docx_bytes, file_name=f"TenderAI_{a['file_name']}.docx",
+                                              mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                                              key=f"docx_{a['id']}")
+                        except Exception:
+                            pass
+                with bc4:
                     if st.button("💬 Soru Sor", key=f"chat_{a['id']}"):
                         st.session_state["chatbot_analysis_id"] = a["id"]
                         st.session_state["current_page"] = "chatbot"
