@@ -32,7 +32,7 @@ class Settings(BaseSettings):
 
     # === OpenAI Ayarları / OpenAI Settings ===
     OPENAI_API_KEY: str = "sk-your-key-here"
-    OPENAI_MODEL: str = "gpt-4"
+    OPENAI_MODEL: str = "gpt-4o"
     OPENAI_MAX_TOKENS: int = 4096
     OPENAI_TEMPERATURE: float = 0.1
 
@@ -41,23 +41,22 @@ class Settings(BaseSettings):
 
     # === Güvenlik / Security ===
     SECRET_KEY: str = "your-secret-key-here"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION_HOURS: int = 24
 
     # === Uygulama / Application ===
     APP_NAME: str = "TenderAI"
-    APP_VERSION: str = "0.1.0"
-    DEBUG: bool = True
+    APP_VERSION: str = "1.0.0"
+    DEBUG: bool = False
+
+    # === Demo Modu / Demo Mode ===
+    DEMO_MODE: bool = False
 
     # === Dosya Yükleme / File Upload ===
     UPLOAD_DIR: Path = BASE_DIR / "data" / "uploads"
     MAX_FILE_SIZE_MB: int = 50
     ALLOWED_EXTENSIONS: list[str] = [".pdf"]
 
-    # === Vektör Veritabanı / Vector Database ===
-    QDRANT_HOST: str = "localhost"
-    QDRANT_PORT: int = 6333
-    EMBEDDING_MODEL: str = "all-MiniLM-L6-v2"
+    # === Logging ===
+    LOG_LEVEL: str = "INFO"
 
     @property
     def upload_dir_path(self) -> Path:
@@ -65,7 +64,11 @@ class Settings(BaseSettings):
         self.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         return self.UPLOAD_DIR
 
+    @property
+    def is_demo(self) -> bool:
+        """Demo modunda mı / Is in demo mode."""
+        return self.DEMO_MODE
 
-# Global settings instance — tek bir yerden import edilir
-# Global settings instance — imported from a single place
+
+# Global settings instance
 settings = Settings()

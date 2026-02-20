@@ -1,170 +1,179 @@
-# 🏗️ TenderAI — İhale Şartname Analiz Platformu
+# 📋 TenderAI — Yapay Zeka Destekli İhale Şartname Analiz Platformu
 
-<p align="center">
-  <strong>Yapay zeka destekli ihale teknik şartname analizi</strong><br>
-  RAG + GPT-4 ile risk analizi, belge kontrolü ve mali özet — tek tıkla.
-</p>
+<div align="center">
 
----
+**İhale şartnamelerini yapay zeka ile saniyeler içinde analiz edin.**
 
-## 📋 Proje Açıklaması
+![Python](https://img.shields.io/badge/Python-3.12+-blue)
+![Streamlit](https://img.shields.io/badge/Streamlit-1.30+-red)
+![License](https://img.shields.io/badge/License-MIT-green)
+![Tests](https://img.shields.io/badge/tests-230+-brightgreen)
 
-**TenderAI**, Türkiye'deki kamu ve özel sektör ihalelerine giren firmaların teknik şartname PDF'lerini yapay zeka ile analiz eden bir SaaS platformudur.
-
-Firmalar ihale şartname PDF'lerini sisteme yükler; TenderAI, **RAG (Retrieval Augmented Generation)** ve **GPT-4** kullanarak aşağıdaki analizleri otomatik olarak gerçekleştirir:
-
-- 🔍 **Risk Analizi** — Şartnamedeki riskli maddelerin tespiti ve derecelendirmesi
-- 📄 **Gerekli Belge Listesi** — Teklif için sunulması gereken belgelerin çıkarılması
-- ⚖️ **Ceza Maddeleri** — Gecikme, eksiklik ve uyumsuzluk cezalarının özetlenmesi
-- 💰 **Mali Özet** — Teminat, ödeme koşulları ve mali yükümlülüklerin analizi
-- ⏱️ **Süre Analizi** — Proje takvimi, teslim süreleri ve kritik tarihlerin belirlenmesi
+</div>
 
 ---
 
-## ✨ Özellikler
+## 🚀 Ne Yapıyor?
 
-| Özellik | Açıklama |
-|---------|----------|
-| PDF Analizi | Teknik şartname PDF'lerini otomatik ayrıştırma |
-| Yapay Zeka Motoru | GPT-4 + RAG tabanlı akıllı analiz |
-| Risk Skorlama | Madde bazlı risk puanlama sistemi |
-| Belge Kontrol | Eksik belge uyarı sistemi |
-| PDF Rapor | Analiz sonuçlarını PDF olarak dışa aktarma |
-| Dashboard | Interaktif analiz paneli (Streamlit) |
-| Kullanıcı Yönetimi | JWT tabanlı kimlik doğrulama |
-| Ödeme Sistemi | Abonelik bazlı ödeme altyapısı |
-| Analiz Geçmişi | Tüm geçmiş analizlere erişim |
-| API Desteği | FastAPI ile RESTful API (gelecek sürüm) |
+TenderAI, ihale şartname PDF dosyalarını yapay zeka ile analiz ederek:
 
----
+- ⚠️ **Risk Analizi** — Mali, teknik, hukuki ve süre risklerini tespit eder
+- 📋 **Belge Kontrolü** — Gerekli belgelerin listesini çıkarır
+- 💰 **Ceza Taraması** — Ceza maddelerini ve oranlarını bulur
+- 💵 **Mali Özet** — Teminat ve ödeme koşullarını özetler
+- ⏱️ **Süre Analizi** — Milestoneları ve gecikme risklerini değerlendirir
+- 📊 **Yönetici Özeti** — GİR / DİKKATLİ GİR / GİRME tavsiyesi verir
 
-## 🛠️ Teknolojiler
+## 🏗️ Mimari
 
-| Katman | Teknoloji |
-|--------|-----------|
-| **Dil** | Python 3.14 |
-| **Frontend** | Streamlit |
-| **Backend** | FastAPI + Uvicorn |
-| **Veritabanı** | SQLite + SQLAlchemy |
-| **AI/ML** | OpenAI GPT-4, LangChain, Sentence Transformers |
-| **Vektör DB** | Qdrant |
-| **PDF İşleme** | pdfplumber, Camelot |
-| **Raporlama** | FPDF2, Plotly |
-| **Auth** | bcrypt, PyJWT |
+```
+PDF → Parser → AI Engine (RAG + GPT-4o) → Sonuçlar → PDF Rapor
+                    ↕                          ↕
+               FAISS Vector Store         SQLite DB
+```
 
----
+## ⚡ Hızlı Başlangıç
 
-## 🚀 Kurulum
-
-### 1. Depoyu klonlayın
+### 1. Klonla
 
 ```bash
-git clone https://github.com/<kullanici>/tender-analysis-ai.git
+git clone https://github.com/M-Fatih-C/tender-analysis-ai.git
 cd tender-analysis-ai
 ```
 
-### 2. Sanal ortam oluşturun
+### 2. Kur & Başlat
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # macOS/Linux
+chmod +x run.sh
+./run.sh
 ```
 
-### 3. Bağımlılıkları yükleyin
+Veya manuel:
 
 ```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
-```
-
-### 4. Ortam değişkenlerini ayarlayın
-
-```bash
 cp .env.example .env
-# .env dosyasını düzenleyin ve API anahtarlarınızı girin
-```
-
-### 5. Uygulamayı başlatın
-
-```bash
+# .env dosyasına OPENAI_API_KEY girin
 streamlit run ui/app.py
 ```
 
----
+### 3. Demo Modu (API key gerekmez)
 
-## 📖 Kullanım
+```bash
+./run.sh --demo
+```
 
-1. **Giriş Yapın** — Kullanıcı adı ve şifrenizle sisteme giriş yapın
-2. **PDF Yükleyin** — İhale teknik şartname PDF'ini sürükle-bırak ile yükleyin
-3. **Analiz Başlatın** — "Analiz Et" butonuyla AI analiz sürecini başlatın
-4. **Sonuçları İnceleyin** — Risk analizi, belge listesi, ceza maddeleri ve mali özeti görüntüleyin
-5. **Rapor İndirin** — Sonuçları PDF rapor olarak indirin
+## 🐳 Docker
 
----
+```bash
+cp .env.example .env
+# .env'deki OPENAI_API_KEY'i düzenleyin
+docker-compose up --build
+```
 
-## 📸 Ekran Görüntüleri
+Tarayıcıda: `http://localhost:8501`
 
-> 📷 Ekran görüntüleri yakında eklenecektir.
+## 🔑 OpenAI API Key Alma
 
----
+1. [platform.openai.com](https://platform.openai.com) adresine gidin
+2. Hesap oluşturun / giriş yapın
+3. **API Keys** → **Create new secret key**
+4. Anahtarı `.env` dosyasına `OPENAI_API_KEY=sk-...` olarak yapıştırın
 
 ## 📁 Proje Yapısı
 
 ```
 tender-analysis-ai/
-├── config/          # Konfigürasyon ayarları
-├── src/             # Ana kaynak kodu
-│   ├── pdf_parser/  # PDF ayrıştırma motoru
-│   ├── ai_engine/   # AI analiz motoru
-│   ├── database/    # Veritabanı modelleri
-│   ├── auth/        # Kimlik doğrulama
-│   ├── report/      # Rapor üretici
-│   ├── payment/     # Ödeme sistemi
-│   └── utils/       # Yardımcı araçlar
-├── ui/              # Streamlit arayüzü
-├── tests/           # Test dosyaları
-├── data/            # Veri dizini
-└── docs/            # Dokümantasyon
+├── ui/                     # Streamlit arayüz
+│   ├── app.py              # Ana uygulama
+│   ├── components/         # Sidebar bileşeni
+│   └── pages/              # Login, Dashboard, Analiz, Geçmiş, Ödeme
+├── src/
+│   ├── pdf_parser/         # PDF metin çıkarma
+│   ├── ai_engine/          # RAG pipeline (GPT-4o + FAISS)
+│   ├── database/           # SQLAlchemy modeller + CRUD
+│   ├── auth/               # Kayıt, giriş, session yönetimi
+│   ├── report/             # PDF rapor üretici
+│   ├── payment/            # Plan & ödeme yönetimi
+│   └── utils/              # Yardımcı fonksiyonlar
+├── config/                 # Ayarlar, logging, demo verisi
+├── tests/                  # 230+ pytest testi
+├── assets/fonts/           # DejaVuSans (Türkçe PDF desteği)
+├── Dockerfile
+├── docker-compose.yml
+├── run.sh
+└── requirements.txt
 ```
 
----
-
-## 🧪 Testler
+## 🧪 Test
 
 ```bash
+source venv/bin/activate
 pytest tests/ -v
 ```
 
----
+Test kapsamı:
+| Modül | Test Sayısı |
+|-------|-------------|
+| PDF Parser | 37 |
+| AI Engine | 35 |
+| Database | 46 |
+| Auth | 35 |
+| Report | 15 |
+| Payment | 27 |
+| Helpers | 29 |
+| Integration | 8 |
+| **Toplam** | **230+** |
+
+## 💳 Planlar
+
+| Plan | Fiyat | Analiz/Ay |
+|------|-------|-----------|
+| 🆓 Ücretsiz | 0 ₺ | 3 |
+| ⭐ Başlangıç | 5.000 ₺ | 20 |
+| 💎 Profesyonel | 15.000 ₺ | Sınırsız |
+
+## ⚠️ Bilinen Sınırlamalar
+
+- Taranmış (görsek) PDF'ler desteklenmez (OCR planlanıyor)
+- Şifreli PDF'ler açılamaz
+- Ödeme entegrasyonu henüz aktif değil (MVP)
+- Tek dil: Türkçe
 
 ## 🗺️ Yol Haritası
 
-- [x] Modül 1: Proje yapısı kurulumu
-- [ ] Modül 2: PDF ayrıştırma motoru
-- [ ] Modül 3: AI analiz motoru
-- [ ] Modül 4: Veritabanı ve kullanıcı yönetimi
-- [ ] Modül 5: Streamlit arayüzü
-- [ ] Modül 6: Raporlama sistemi
-- [ ] Modül 7: Ödeme entegrasyonu
-- [ ] Modül 8: FastAPI backend
-- [ ] Modül 9: Test ve deployment
+- [ ] OCR desteği (Tesseract)
+- [ ] iyzico / PayTR ödeme entegrasyonu
+- [ ] API endpoint'leri (FastAPI)
+- [ ] Çoklu dil desteği
+- [ ] Alembic database migration
+- [ ] Bulk analiz (birden fazla PDF)
+- [ ] Karşılaştırmalı analiz
 
----
+## 🛡️ Güvenlik
+
+- bcrypt şifre hashleme
+- SQLAlchemy ORM (SQL injection koruması)
+- API key'ler `.env`'de (`.gitignore`'da)
+- Dosya boyutu ve format kontrolü
+- Rate limiting (5 deneme / 5 dk)
 
 ## 📄 Lisans
 
-Bu proje [MIT Lisansı](LICENSE) kapsamında lisanslanmıştır.
+MIT License — detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+## 🤝 Katkıda Bulunma
+
+1. Fork edin
+2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
+3. Değişiklikleri commit edin (`git commit -m 'feat: add amazing feature'`)
+4. Push edin (`git push origin feature/amazing-feature`)
+5. Pull Request açın
 
 ---
 
-## 📬 İletişim
-
-Sorularınız veya önerileriniz için:
-
-- 📧 Email: info@tenderai.com.tr
-- 🐛 Issue: [GitHub Issues](https://github.com/<kullanici>/tender-analysis-ai/issues)
-
----
-
-<p align="center">
-  <sub>TenderAI ile ihalelerde bir adım önde olun. 🚀</sub>
-</p>
+<div align="center">
+<b>TenderAI</b> — Yapay Zeka ile İhale Analizi 📋
+</div>

@@ -1,44 +1,40 @@
-# TenderAI - Bağımlılıklar / Dependencies
-# Python 3.14+
+# ============================================================
+# TenderAI - Python Dependencies / Bağımlılıklar
+# ============================================================
 
-# === AI / LLM ===
-openai>=1.12.0
-langchain>=0.1.9
-langchain-openai>=0.0.5
-langchain-community>=0.0.20
-tiktoken>=0.6.0
-tenacity>=8.2.3
+# Core / Çekirdek
+streamlit>=1.30.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
 
-# === Vektör Veritabanı / Vector Database ===
-qdrant-client>=1.7.3
-sentence-transformers>=2.5.1
+# PDF İşleme / PDF Processing
+pdfplumber>=0.10.0
+camelot-py[base]>=0.11.0
 
-# === PDF İşleme / PDF Processing ===
-pdfplumber>=0.11.0
-camelot-py[cv]>=0.11.0
+# AI / Yapay Zeka
+openai>=1.0.0
+langchain>=0.2.0
+langchain-openai>=0.1.0
+langchain-community>=0.2.0
+langchain-text-splitters>=0.2.0
+tiktoken>=0.5.0
+tenacity>=8.0.0
+faiss-cpu>=1.7.0
 
-# === Web Framework ===
-streamlit>=1.31.0
-fastapi>=0.109.2
-uvicorn>=0.27.1
-python-multipart>=0.0.9
+# Veritabanı / Database
+SQLAlchemy>=2.0.0
 
-# === Veritabanı / Database ===
-sqlalchemy>=2.0.27
+# Kimlik Doğrulama / Authentication
+bcrypt>=4.0.0
 
-# === Güvenlik / Security ===
-bcrypt>=4.1.2
-pyjwt>=2.8.0
+# Raporlama / Reporting
+fpdf2>=2.7.0
+plotly>=5.15.0
 
-# === Raporlama / Reporting ===
-fpdf2>=2.7.8
-plotly>=5.18.0
-pandas>=2.2.0
+# Test
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
 
-# === Yapılandırma / Configuration ===
-python-dotenv>=1.0.1
-pydantic>=2.6.1
-pydantic-settings>=2.2.1
-
-# === Test ===
-pytest>=8.0.1
+# Yardımcı / Utilities
+requests>=2.31.0
