@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     OPENAI_MAX_TOKENS: int = 4096
     OPENAI_TEMPERATURE: float = 0.1
 
+    # === Gemini API ===
+    GEMINI_API_KEY: str = ""
+    GEMINI_MODEL: str = "gemini-2.0-flash"
+
     # === Veritabanı / Database ===
     DATABASE_URL: str = f"sqlite:///{BASE_DIR / 'tenderai.db'}"
 

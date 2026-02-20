@@ -170,23 +170,28 @@ def _render_analyzing() -> None:
             status.info(msg)
             time.sleep(0.2)
 
-        # AI analiz veya demo
+        # AI analiz: OpenAI → Gemini → Demo
         from config.settings import settings
         api_key = settings.OPENAI_API_KEY
+        gemini_key = settings.GEMINI_API_KEY
         demo_mode = st.session_state.get("demo_mode", False) or settings.DEMO_MODE
 
-        use_ai = (
+        has_openai = (
             not demo_mode
             and api_key
             and api_key != "sk-your-key-here"
             and len(api_key) > 10
         )
+        has_gemini = bool(gemini_key and len(gemini_key) > 5)
 
-        if use_ai:
+        result_dict = None
+
+        # --- 1. OpenAI dene ---
+        if has_openai:
             for pct, msg in steps[5:]:
                 progress.progress(pct / 100)
-                status.info(msg)
-                time.sleep(0.2)
+                status.info(f"🟣 OpenAI: {msg}")
+                time.sleep(0.15)
 
             try:
                 from src.ai_engine.analyzer import IhaleAnalizAI
@@ -199,39 +204,51 @@ def _render_analyzing() -> None:
                 finally:
                     loop.close()
 
-                # AnalysisResult → dict
                 if hasattr(result, "__dict__"):
                     result_dict = {k: v for k, v in result.__dict__.items() if not k.startswith("_")}
                 elif isinstance(result, dict):
                     result_dict = result
-                else:
-                    result_dict = DEMO_ANALYSIS_RESULT
+
+                if result_dict:
+                    result_dict["model_used"] = "openai"
+                    status.success("✅ OpenAI analizi tamamlandı!")
+
             except Exception as ai_err:
-                err_str = str(ai_err).lower()
-                if "quota" in err_str or "429" in err_str or "rate" in err_str:
-                    status.warning(
-                        "⚠️ OpenAI API kotası doldu. Demo sonuçları kullanılıyor.\n\n"
-                        "Gerçek analiz için [platform.openai.com/billing](https://platform.openai.com/billing) "
-                        "adresinden kredi yükleyin."
-                    )
-                elif "auth" in err_str or "401" in err_str or "invalid" in err_str:
-                    status.warning("⚠️ OpenAI API anahtarı geçersiz. Demo sonuçları kullanılıyor.")
-                else:
-                    status.warning(f"⚠️ AI hatası: {ai_err}\n\nDemo sonuçları kullanılıyor.")
-                logger.warning(f"AI fallback to demo: {ai_err}")
-                time.sleep(1)
-                result_dict = dict(DEMO_ANALYSIS_RESULT)
-        else:
-            # Demo sonuçları
+                logger.warning(f"OpenAI hatası, Gemini'ye geçiliyor: {ai_err}")
+                status.warning(f"⚠️ OpenAI hatası — Gemini'ye geçiliyor...")
+                time.sleep(0.5)
+                result_dict = None
+
+        # --- 2. Gemini dene ---
+        if result_dict is None and has_gemini and not demo_mode:
             for pct, msg in steps[5:]:
                 progress.progress(pct / 100)
-                status.info(msg)
-                time.sleep(0.4)
+                status.info(f"🔵 Gemini: {msg}")
+                time.sleep(0.15)
+
+            try:
+                from src.ai_engine.gemini_analyzer import GeminiAnalizAI
+                gemini_engine = GeminiAnalizAI(gemini_api_key=gemini_key)
+                result_dict = gemini_engine.analyze(doc)
+                result_dict["model_used"] = "gemini"
+                status.success("✅ Gemini analizi tamamlandı!")
+            except Exception as gem_err:
+                logger.warning(f"Gemini hatası, demo'ya geçiliyor: {gem_err}")
+                status.warning(f"⚠️ Gemini hatası — Demo sonuçları kullanılıyor...")
+                time.sleep(0.5)
+                result_dict = None
+
+        # --- 3. Demo fallback ---
+        if result_dict is None:
+            for pct, msg in steps[5:]:
+                progress.progress(pct / 100)
+                status.info(f"🎭 Demo: {msg}")
+                time.sleep(0.3)
             result_dict = dict(DEMO_ANALYSIS_RESULT)
+            result_dict["model_used"] = "demo"
 
         progress.progress(1.0)
-        status.success("✅ Analiz tamamlandı!")
-        time.sleep(0.5)
+        time.sleep(0.3)
 
         # DB kaydet
         _save_to_db(result_dict, file_name, st.session_state.get("uploaded_file_size", 0), doc)
