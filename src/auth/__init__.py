@@ -1,10 +1,10 @@
 """
 TenderAI Kimlik Doğrulama Paketi / Authentication Package.
 
-JWT tabanlı kullanıcı kimlik doğrulama sistemi.
-JWT-based user authentication system.
+bcrypt + Streamlit session tabanlı kimlik doğrulama sistemi.
+bcrypt + Streamlit session-based authentication system.
 """
 
-from src.auth.auth import AuthManager
+from src.auth.auth import AuthManager, login_required
 
-__all__ = ["AuthManager"]
+__all__ = ["AuthManager", "login_required"]
