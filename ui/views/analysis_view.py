@@ -188,23 +188,39 @@ def _render_analyzing() -> None:
                 status.info(msg)
                 time.sleep(0.2)
 
-            from src.ai_engine.analyzer import IhaleAnalizAI
-            engine = IhaleAnalizAI(openai_api_key=api_key)
-
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
             try:
-                result = loop.run_until_complete(engine.analyze(doc))
-            finally:
-                loop.close()
+                from src.ai_engine.analyzer import IhaleAnalizAI
+                engine = IhaleAnalizAI(openai_api_key=api_key)
 
-            # AnalysisResult → dict
-            if hasattr(result, "__dict__"):
-                result_dict = {k: v for k, v in result.__dict__.items() if not k.startswith("_")}
-            elif isinstance(result, dict):
-                result_dict = result
-            else:
-                result_dict = DEMO_ANALYSIS_RESULT
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    result = loop.run_until_complete(engine.analyze(doc))
+                finally:
+                    loop.close()
+
+                # AnalysisResult → dict
+                if hasattr(result, "__dict__"):
+                    result_dict = {k: v for k, v in result.__dict__.items() if not k.startswith("_")}
+                elif isinstance(result, dict):
+                    result_dict = result
+                else:
+                    result_dict = DEMO_ANALYSIS_RESULT
+            except Exception as ai_err:
+                err_str = str(ai_err).lower()
+                if "quota" in err_str or "429" in err_str or "rate" in err_str:
+                    status.warning(
+                        "⚠️ OpenAI API kotası doldu. Demo sonuçları kullanılıyor.\n\n"
+                        "Gerçek analiz için [platform.openai.com/billing](https://platform.openai.com/billing) "
+                        "adresinden kredi yükleyin."
+                    )
+                elif "auth" in err_str or "401" in err_str or "invalid" in err_str:
+                    status.warning("⚠️ OpenAI API anahtarı geçersiz. Demo sonuçları kullanılıyor.")
+                else:
+                    status.warning(f"⚠️ AI hatası: {ai_err}\n\nDemo sonuçları kullanılıyor.")
+                logger.warning(f"AI fallback to demo: {ai_err}")
+                time.sleep(1)
+                result_dict = dict(DEMO_ANALYSIS_RESULT)
         else:
             # Demo sonuçları
             for pct, msg in steps[5:]:
