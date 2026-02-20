@@ -96,16 +96,76 @@ def render_settings() -> None:
 
     # ── Hesap İşlemleri ──
     with st.expander("⚠️ Hesap İşlemleri"):
-        st.markdown("**KVKK Uyumu**")
-        if st.button("📥 Tüm Verilerimi İndir"):
-            st.info("Bu özellik yakında aktif olacaktır.")
+        st.markdown("**KVKK Uyumu** — Kişisel Verilerin Korunması")
+        st.caption("6698 sayılı KVKK kapsamında verilerinize erişim ve silme hakkınız bulunmaktadır.")
+
+        col_k1, col_k2 = st.columns(2)
+        with col_k1:
+            if st.button("📥 Tüm Verilerimi İndir", use_container_width=True):
+                try:
+                    user_id = st.session_state.get("user_id", 0)
+                    import json
+                    from src.database.db import DatabaseManager
+                    from src.utils.audit import export_user_data
+                    db_mgr = DatabaseManager()
+                    db_mgr.init_db()
+                    with db_mgr.get_db() as db:
+                        data = export_user_data(db, user_id)
+                    json_str = json.dumps(data, ensure_ascii=False, default=str, indent=2)
+                    st.download_button(
+                        "💾 JSON İndir", data=json_str.encode("utf-8"),
+                        file_name="TenderAI_KVKK_Export.json", mime="application/json",
+                        key="kvkk_download",
+                    )
+                    st.success("✅ Verileriniz hazır. İndirme butonuna tıklayın.")
+                except Exception as e:
+                    st.error(f"Veri dışa aktarma hatası: {e}")
+
+        with col_k2:
+            if st.button("📋 İşlem Geçmişi", use_container_width=True):
+                try:
+                    user_id = st.session_state.get("user_id", 0)
+                    from src.database.db import DatabaseManager
+                    from src.utils.audit import get_user_audit_logs
+                    db_mgr = DatabaseManager()
+                    db_mgr.init_db()
+                    with db_mgr.get_db() as db:
+                        logs = get_user_audit_logs(db, user_id, limit=20)
+                    if logs:
+                        for log in logs:
+                            st.markdown(
+                                f'<div style="font-size:0.75rem;color:#8892b0;margin:2px 0;">'
+                                f'🕐 {log["created_at"]} — <b>{log["action"]}</b>'
+                                f'{" — " + log["details"][:50] if log["details"] else ""}'
+                                f'</div>', unsafe_allow_html=True,
+                            )
+                    else:
+                        st.caption("Henüz işlem geçmişi yok.")
+                except Exception:
+                    st.caption("İşlem geçmişi yüklenemedi.")
 
         st.markdown("---")
         st.markdown("**⚠️ Tehlikeli Bölge**")
-        if st.button("🗑️ Hesabımı Sil", type="secondary"):
-            st.warning("Bu işlem geri alınamaz. Tüm verileriniz silinecektir.")
-            if st.button("Evet, hesabımı silmek istiyorum", type="primary", key="confirm_delete"):
-                st.info("Hesap silme özelliği yakında aktif olacaktır.")
+        confirm = st.checkbox("Hesabımı ve tüm verilerimi silmek istiyorum", key="kvkk_delete_confirm")
+        if confirm:
+            if st.button("🗑️ Hesabımı Kalıcı Olarak Sil", type="primary"):
+                try:
+                    user_id = st.session_state.get("user_id", 0)
+                    from src.database.db import DatabaseManager
+                    from src.utils.audit import delete_user_data
+                    db_mgr = DatabaseManager()
+                    db_mgr.init_db()
+                    with db_mgr.get_db() as db:
+                        ok = delete_user_data(db, user_id)
+                    if ok:
+                        st.success("✅ Tüm verileriniz silindi. Çıkış yapılıyor...")
+                        for key in list(st.session_state.keys()):
+                            del st.session_state[key]
+                        st.rerun()
+                    else:
+                        st.error("Silme işlemi başarısız oldu.")
+                except Exception as e:
+                    st.error(f"Hesap silme hatası: {e}")
 
     # ── Hakkında ──
     with st.expander("ℹ️ Hakkında"):
