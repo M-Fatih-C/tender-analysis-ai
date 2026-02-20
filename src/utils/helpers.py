@@ -277,3 +277,166 @@ def remove_header_footer_repeats(
         cleaned_pages.append("\n".join(filtered).strip())
 
     return cleaned_pages
+
+
+# ============================================================
+# Modül 9'da eklenen fonksiyonlar / Functions added in Module 9
+# ============================================================
+
+
+def format_risk_score(score: int | None) -> str:
+    """
+    Risk skorunu emoji ile formatla / Format risk score with emoji.
+
+    Args:
+        score: Risk skoru (0-100) / Risk score (0-100)
+
+    Returns:
+        Formatlı skor / Formatted score
+
+    Examples:
+        >>> format_risk_score(78)
+        '78 🔴'
+        >>> format_risk_score(45)
+        '45 🟡'
+        >>> format_risk_score(20)
+        '20 🟢'
+    """
+    if score is None:
+        return "— ⚪"
+    if score <= 40:
+        return f"{score} 🟢"
+    elif score <= 70:
+        return f"{score} 🟡"
+    else:
+        return f"{score} 🔴"
+
+
+def risk_color(score: int | None) -> str:
+    """
+    Risk skoruna göre hex renk döndür / Return hex color for risk score.
+
+    Args:
+        score: Risk skoru (0-100) / Risk score
+
+    Returns:
+        Hex renk kodu / Hex color code
+
+    Examples:
+        >>> risk_color(20)
+        '#27ae60'
+        >>> risk_color(55)
+        '#f39c12'
+        >>> risk_color(85)
+        '#e74c3c'
+    """
+    if score is None:
+        return "#95a5a6"
+    if score <= 40:
+        return "#27ae60"
+    elif score <= 70:
+        return "#f39c12"
+    else:
+        return "#e74c3c"
+
+
+_TURKISH_MONTHS = [
+    "", "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
+    "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık",
+]
+_TURKISH_DAYS = [
+    "Pazartesi", "Salı", "Çarşamba", "Perşembe",
+    "Cuma", "Cumartesi", "Pazar",
+]
+
+
+def format_date_turkish(dt: datetime | None) -> str:
+    """
+    Türkçe tarih formatı / Turkish date format.
+
+    Args:
+        dt: datetime nesnesi / datetime object
+
+    Returns:
+        '12 Haziran 2025, Perşembe' formatı
+
+    Examples:
+        >>> from datetime import datetime
+        >>> format_date_turkish(datetime(2025, 6, 12))
+        '12 Haziran 2025, Perşembe'
+    """
+    if dt is None:
+        return "—"
+    day_name = _TURKISH_DAYS[dt.weekday()]
+    month_name = _TURKISH_MONTHS[dt.month]
+    return f"{dt.day} {month_name} {dt.year}, {day_name}"
+
+
+def format_file_size_mb(size_mb: float | None) -> str:
+    """
+    MB cinsinden dosya boyutunu formatla / Format file size in MB.
+
+    Args:
+        size_mb: Boyut (MB) / Size in MB
+
+    Returns:
+        Formatlı boyut / Formatted size
+
+    Examples:
+        >>> format_file_size_mb(1.567)
+        '1.6 MB'
+        >>> format_file_size_mb(0.003)
+        '3 KB'
+    """
+    if size_mb is None:
+        return "—"
+    if size_mb < 0.01:
+        return f"{size_mb * 1024:.0f} KB"
+    elif size_mb < 1:
+        return f"{size_mb * 1024:.0f} KB"
+    else:
+        return f"{size_mb:.1f} MB"
+
+
+def time_ago(dt: datetime | None) -> str:
+    """
+    Geçen süreyi Türkçe olarak döndür / Return elapsed time in Turkish.
+
+    Args:
+        dt: Geçmiş zaman / Past datetime
+
+    Returns:
+        '2 saat önce', '3 gün önce' gibi / Like '2 hours ago'
+
+    Examples:
+        >>> from datetime import datetime, timedelta
+        >>> time_ago(datetime.now() - timedelta(hours=2))
+        '2 saat önce'
+    """
+    if dt is None:
+        return "—"
+
+    now = datetime.now(dt.tzinfo)
+    diff = now - dt
+
+    seconds = int(diff.total_seconds())
+    if seconds < 0:
+        return "az önce"
+
+    if seconds < 60:
+        return "az önce"
+    elif seconds < 3600:
+        minutes = seconds // 60
+        return f"{minutes} dakika önce"
+    elif seconds < 86400:
+        hours = seconds // 3600
+        return f"{hours} saat önce"
+    elif seconds < 2592000:  # 30 gün
+        days = seconds // 86400
+        return f"{days} gün önce"
+    elif seconds < 31536000:  # 365 gün
+        months = seconds // 2592000
+        return f"{months} ay önce"
+    else:
+        years = seconds // 31536000
+        return f"{years} yıl önce"
