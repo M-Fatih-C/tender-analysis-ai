@@ -13,6 +13,12 @@ from src.utils.helpers import time_ago_turkish, risk_color_hex
 
 def render_dashboard() -> None:
     """Premium dashboard."""
+    # Onboarding check
+    if not st.session_state.get("onboarding_completed", True):
+        from ui.components.onboarding import render_onboarding
+        render_onboarding()
+        return
+
     user_name = st.session_state.get("user_name", "Kullanıcı")
     user_id = st.session_state.get("user_id", 0)
     render_header(f"Hoş Geldiniz, {user_name}!", "İhale analiz özetiniz", show_notifications=True)
