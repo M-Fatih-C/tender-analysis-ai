@@ -98,7 +98,7 @@ def _render_upload() -> None:
             uploaded.seek(0)
             from src.pdf_parser.parser import IhalePDFParser
             parser = IhalePDFParser()
-            doc = parser.parse(io.BytesIO(uploaded.getvalue()))
+            doc = parser.parse(uploaded.getvalue())
             preview = doc.full_text[:1000] if doc.full_text else "Metin çıkarılamadı."
             with st.expander("📖 Ön İzleme (ilk 1000 karakter)"):
                 st.text(preview)
@@ -163,7 +163,7 @@ def _render_analyzing() -> None:
         # PDF parse
         from src.pdf_parser.parser import IhalePDFParser
         parser = IhalePDFParser()
-        doc = parser.parse(io.BytesIO(file_bytes))
+        doc = parser.parse(file_bytes)
 
         for pct, msg in steps[3:5]:
             progress.progress(pct / 100)
