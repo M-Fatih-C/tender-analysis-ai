@@ -399,4 +399,99 @@ div[data-testid="stProgress"] > div > div {
     .risk-circle { width: 120px; height: 120px; }
     .risk-circle .score { font-size: 2rem; }
 }
+
+/* ============================================================
+   SKELETON LOADING (shimmer)
+   ============================================================ */
+@keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+.skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.8s ease-in-out infinite;
+    border-radius: 8px;
+}
+.skeleton-card { height: 90px; margin-bottom: 10px; border-radius: 12px; }
+.skeleton-chart { height: 220px; border-radius: 14px; }
+.skeleton-text { height: 14px; width: 60%; margin: 6px 0; border-radius: 4px; }
+.skeleton-text-sm { height: 10px; width: 40%; margin: 4px 0; border-radius: 3px; }
+
+/* ============================================================
+   TOAST NOTIFICATIONS
+   ============================================================ */
+@keyframes toastSlide { from{transform:translateX(120%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes toastFade { from{opacity:1} to{opacity:0} }
+.toast {
+    position: fixed; top: 80px; right: 20px; z-index: 9999;
+    min-width: 280px; max-width: 400px;
+    padding: 14px 20px; border-radius: 12px;
+    backdrop-filter: blur(15px);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    animation: toastSlide 0.4s ease, toastFade 0.3s ease 4.7s forwards;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.85rem; font-weight: 500;
+}
+.toast-success { background: rgba(39,174,96,0.9); color: #fff; border: 1px solid #27ae60; }
+.toast-error { background: rgba(231,76,60,0.9); color: #fff; border: 1px solid #e74c3c; }
+.toast-info { background: rgba(102,126,234,0.9); color: #fff; border: 1px solid #667eea; }
+.toast-warning { background: rgba(243,156,18,0.9); color: #fff; border: 1px solid #f39c12; }
+.toast-icon { font-size: 1.3rem; }
+
+/* ============================================================
+   PAGE TRANSITIONS
+   ============================================================ */
+@keyframes pageFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.main .block-container {
+    animation: pageFadeIn 0.35s ease-out;
+}
+
+/* ============================================================
+   STAGGERED CARD ANIMATIONS
+   ============================================================ */
+.metric-card:nth-child(1) { animation-delay: 0.05s; }
+.metric-card:nth-child(2) { animation-delay: 0.1s; }
+.metric-card:nth-child(3) { animation-delay: 0.15s; }
+.metric-card:nth-child(4) { animation-delay: 0.2s; }
+
+.action-card:nth-child(1) { animation-delay: 0.1s; }
+.action-card:nth-child(2) { animation-delay: 0.2s; }
+.action-card:nth-child(3) { animation-delay: 0.3s; }
+.action-card:nth-child(4) { animation-delay: 0.4s; }
+
+.analysis-card { animation: slideInLeft 0.3s ease; }
+.analysis-card:nth-child(1) { animation-delay: 0s; }
+.analysis-card:nth-child(2) { animation-delay: 0.05s; }
+.analysis-card:nth-child(3) { animation-delay: 0.1s; }
+.analysis-card:nth-child(4) { animation-delay: 0.15s; }
+.analysis-card:nth-child(5) { animation-delay: 0.2s; }
+
+/* ============================================================
+   STAT MINI LABEL  
+   ============================================================ */
+.stat-delta {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-size: 0.65rem; font-weight: 700;
+}
+.delta-up { background: rgba(39,174,96,0.15); color: #27ae60; }
+.delta-down { background: rgba(231,76,60,0.15); color: #e74c3c; }
+.delta-neutral { background: rgba(255,255,255,0.06); color: #8892b0; }
+
+/* ============================================================
+   PLOTLY CHART CONTAINERS
+   ============================================================ */
+.js-plotly-plot, .plotly {
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+div[data-testid="stPlotlyChart"] {
+    background: rgba(255,255,255,0.01);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 12px;
+    padding: 4px;
+}
 </style>"""
