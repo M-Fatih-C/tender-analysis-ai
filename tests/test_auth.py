@@ -8,15 +8,13 @@ In-memory SQLite kullanır — diske yazmaz.
 Uses in-memory SQLite — no disk writes.
 """
 
-import time
 import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.database.models import Base, User
-from src.database.db import create_user, get_user_by_id
+from src.database.models import Base
 from src.auth.auth import AuthManager, login_required
 
 

@@ -9,12 +9,11 @@ Uses in-memory SQLite.
 """
 
 import pytest
-from datetime import datetime, timezone
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.database.models import Base, User
+from src.database.models import Base
 from src.database.db import create_user
 from src.payment.payment import PaymentManager, PLANS
 

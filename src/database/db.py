@@ -23,6 +23,7 @@ from src.database.models import (
     Analysis,
     Payment,
     AnalysisReport,
+    CompanyProfile,
 )
 
 logger = logging.getLogger(__name__)

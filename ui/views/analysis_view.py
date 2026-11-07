@@ -102,9 +102,9 @@ def _single_upload() -> None:
             )
         with c3:
             st.markdown(
-                f'<div class="metric-card"><div class="metric-icon">📋</div>'
-                f'<div class="metric-value" style="font-size:1rem;">PDF</div>'
-                f'<div class="metric-label">Format</div></div>',
+                '<div class="metric-card"><div class="metric-icon">📋</div>'
+                '<div class="metric-value" style="font-size:1rem;">PDF</div>'
+                '<div class="metric-label">Format</div></div>',
                 unsafe_allow_html=True,
             )
 

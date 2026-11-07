@@ -2,7 +2,6 @@
 TenderAI İhale Karşılaştırma Sayfası v2.0.
 """
 
-import json
 import streamlit as st
 import plotly.graph_objects as go
 

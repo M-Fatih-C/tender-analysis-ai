@@ -16,7 +16,6 @@ from src.database.db import (
     create_payment,
     update_payment_status,
     update_user,
-    get_user_by_id,
     get_user_analyses,
     check_active_subscription,
 )

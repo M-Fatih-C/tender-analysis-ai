@@ -37,7 +37,7 @@ jobs:
           pip install ruff
 
       - name: Run Ruff
-        run: ruff check src/ ui/ tests/ --output-format=github || true
+        run: ruff check src/ ui/ tests/ --config ruff.toml --output-format=github
 
   # ── 2. Test Suite ──
   test:
@@ -66,6 +66,7 @@ jobs:
 
       - name: Run tests
         run: |
+          mkdir -p reports
           python -m pytest tests/ -q --tb=short \
             --junitxml=reports/junit.xml \
             -v 2>&1 | tee reports/test-output.txt
@@ -94,7 +95,7 @@ jobs:
         run: |
           pip install pip-audit
           pip install -r requirements.txt
-          pip-audit --strict --desc || true
+          pip-audit --strict --desc
 
   # ── 4. Build Docker Image ──
   build:

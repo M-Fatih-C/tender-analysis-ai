@@ -4,12 +4,11 @@ TenderAI Audit Log Sistemi / Audit Log System.
 Kullanıcı işlemlerini takip eder — KVKK uyumluluk.
 """
 
-import json
 import logging
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import Column, Integer, String, DateTime, Text, create_engine
+from sqlalchemy import Column, Integer, String, DateTime, Text, Table, MetaData
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -56,7 +55,6 @@ def log_audit(
         resource_id: İlgili kaynak ID
     """
     try:
-        from src.database.models import Base
 
         # AuditLog tablosu yoksa oluştur
         if not _ensure_audit_table(db):
@@ -190,7 +188,6 @@ def delete_user_data(db: Session, user_id: int) -> bool:
 # Audit Table (SQLAlchemy Core — model bağımlılığı olmadan)
 # ==============================================================
 
-from sqlalchemy import Table, MetaData
 _metadata = MetaData()
 
 _AUDIT_TABLE = Table(

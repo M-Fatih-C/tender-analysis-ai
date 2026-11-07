@@ -8,10 +8,9 @@ Mock OpenAI API kullanarak test eder — gerçek API çağrısı yapmaz.
 Tests using Mock OpenAI API — no real API calls are made.
 """
 
-import json
 import pytest
 from datetime import datetime
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch
 
 from src.ai_engine.analyzer import IhaleAnalizAI, AnalysisResult
 from src.ai_engine.prompts import (
@@ -25,10 +24,8 @@ from src.ai_engine.prompts import (
     FINANCIAL_SUMMARY_PROMPT,
     TIMELINE_ANALYSIS_PROMPT,
     EXECUTIVE_SUMMARY_PROMPT,
-    _PROMPT_REGISTRY,
-    ANALYSIS_QUERIES,
 )
-from src.pdf_parser.parser import ParsedDocument, PageContent, DocumentMetadata
+from src.pdf_parser.parser import ParsedDocument, DocumentMetadata
 
 
 # ============================================================
