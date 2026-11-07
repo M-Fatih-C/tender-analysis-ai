@@ -10,7 +10,6 @@ Tests with real PDFs generated via fpdf2 — no external file dependency.
 
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
 
 from fpdf import FPDF
 

@@ -91,7 +91,7 @@ def render_payment() -> None:
             )
 
             if is_current:
-                st.button(f"Mevcut Plan", key=f"plan_{key}", disabled=True, use_container_width=True)
+                st.button("Mevcut Plan", key=f"plan_{key}", disabled=True, use_container_width=True)
             else:
                 if st.button(f"{'⬆️ Yükselt' if key != 'free' else 'Seç'}", key=f"plan_{key}", use_container_width=True):
                     _upgrade(key)

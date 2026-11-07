@@ -8,7 +8,6 @@ import hashlib
 import html
 import logging
 import re
-import struct
 
 logger = logging.getLogger(__name__)
 

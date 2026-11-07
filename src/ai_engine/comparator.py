@@ -4,7 +4,6 @@ TenderAI İhale Karşılaştırıcı / Tender Comparator.
 Birden fazla ihale analizini karşılaştırır, en uygun ihaleyi önerir.
 """
 
-import json
 import logging
 
 logger = logging.getLogger(__name__)

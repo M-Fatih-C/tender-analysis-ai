@@ -2,13 +2,11 @@
 TenderAI Premium Geçmiş Analizler v2.0.
 """
 
-import json
 import streamlit as st
 from ui.components.header import render_header
 from src.database.db import DatabaseManager, get_user_analyses
 from src.utils.helpers import (
     time_ago_turkish, risk_color_hex, safe_json_parse,
-    format_date_turkish,
 )
 
 

@@ -5,12 +5,9 @@ Gelişmiş Plotly grafikler: gauge chart, zaman serisi, trend analizi,
 risk breakdown, uygunluk skoru entegrasyonu.
 """
 
-import json
 from datetime import datetime, timedelta
 import streamlit as st
 import plotly.graph_objects as go
-import plotly.express as px
-from plotly.subplots import make_subplots
 
 from ui.components.header import render_header
 from src.database.db import DatabaseManager, get_user_analyses, get_analysis_stats
