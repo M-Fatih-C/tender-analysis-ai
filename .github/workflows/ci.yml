@@ -37,7 +37,7 @@ jobs:
           pip install ruff
 
       - name: Run Ruff
-        run: ruff check src/ ui/ tests/ --output-format=github
+        run: ruff check src/ ui/ tests/ --config ruff.toml --output-format=github
 
   # ── 2. Test Suite ──
   test:

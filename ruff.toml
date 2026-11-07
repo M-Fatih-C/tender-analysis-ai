@@ -1,0 +1,6 @@
+target-version = "py312"
+line-length = 100
+
+[lint]
+# Own the incremental correctness gate rather than inheriting runner-global rules.
+select = ["E4", "E7", "E9", "F"]
